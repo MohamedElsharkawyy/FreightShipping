@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>سجل الشحنات</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="سجل الشحنات">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B1F30">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230B1F30'/%3E%3Crect x='14' y='50' width='30' height='30' rx='4' fill='%233E5A72'/%3E%3Crect x='46' y='50' width='30' height='30' rx='4' fill='%23F2A93B'/%3E%3Crect x='30' y='18' width='30' height='30' rx='4' fill='%231B3B55' stroke='%2349CFC0' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230B1F30'/%3E%3Crect x='14' y='50' width='30' height='30' rx='4' fill='%233E5A72'/%3E%3Crect x='46' y='50' width='30' height='30' rx='4' fill='%23F2A93B'/%3E%3Crect x='30' y='18' width='30' height='30' rx='4' fill='%231B3B55' stroke='%2349CFC0' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#0B1F30;
+    --panel:#122A40;
+    --panel-2:#1B3B55;
+    --line: rgba(234,240,246,0.09);
+    --text:#EAF0F6;
+    --text-dim:#8FA6BA;
+    --amber:#F2A93B;
+    --amber-dim: rgba(242,169,59,0.16);
+    --teal:#49CFC0;
+    --teal-dim: rgba(73,207,192,0.16);
+    --coral:#FF6E5C;
+    --coral-dim: rgba(255,110,92,0.16);
+    --blue:#5B9EE8;
+    --blue-dim: rgba(91,158,232,0.16);
+    --slate:#3E5A72;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--ink);
+    color: var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    min-height:100vh;
+    padding: 28px 20px 80px;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi: isolate; }
+  .wrap{ max-width: 1080px; margin: 0 auto; }
+
+  header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: 18px; flex-wrap:wrap; }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .mark{ width:38px; height:38px; flex-shrink:0; }
+  .brand h1{ font-family:'Oswald', sans-serif; font-weight:700; letter-spacing:0.5px; font-size:22px; margin:0; color:var(--text); }
+  .brand p{ margin:2px 0 0; font-size:12.5px; color:var(--text-dim); }
+  .header-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .btn{ border:none; border-radius:9px; cursor:pointer; font-family:inherit; font-size:13.5px; font-weight:600; padding:9px 14px; display:inline-flex; align-items:center; gap:6px; transition: transform .12s ease, opacity .12s ease; white-space:nowrap; }
+  .btn:active{ transform: scale(0.97); }
+  .btn-primary{ background: var(--amber); color:#20140A; }
+  .btn-primary:hover{ opacity:.92; }
+  .btn-ghost{ background: transparent; color: var(--text-dim); border:1px solid var(--line); font-weight:500; font-size:12.5px; padding:9px 12px; }
+  .btn-ghost:hover{ color: var(--teal); border-color: var(--teal); }
+  .btn-ghost.danger:hover{ color: var(--coral); border-color: var(--coral); }
+
+  /* ---- alerts ---- */
+  .alerts{ display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .alert-box{ border-radius:12px; padding:12px 14px; border:1px solid var(--line); }
+  .alert-box.a-red{ background: var(--coral-dim); border-color: rgba(255,110,92,0.4); }
+  .alert-box.a-amber{ background: var(--amber-dim); border-color: rgba(242,169,59,0.4); }
+  .alert-box.a-blue{ background: var(--blue-dim); border-color: rgba(91,158,232,0.4); }
+  .alert-title{ font-size:13px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .alert-box.a-red .alert-title{ color: var(--coral); }
+  .alert-box.a-amber .alert-title{ color: var(--amber); }
+  .alert-box.a-blue .alert-title{ color: var(--blue); }
+  .alert-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+  .alert-chip{ background: rgba(255,255,255,0.06); border:none; color:var(--text); font-family:inherit; font-size:12px; padding:6px 10px; border-radius:8px; cursor:pointer; }
+  .alert-chip:hover{ background: rgba(255,255,255,0.14); }
+
+  /* ---- stats ---- */
+  .stats{ display:grid; grid-template-columns: repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .stat{ background: var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .stat .num{ font-family:'Oswald'; font-size:26px; font-weight:600; }
+  .stat .lbl{ font-size:12px; color: var(--text-dim); margin-top:2px; }
+  .stat.urgent .num{ color: var(--coral); }
+  .stat.done .num{ color: var(--teal); }
+
+  /* ---- controls ---- */
+  .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+  .search{ flex:1; min-width:200px; background: var(--panel); border:1px solid var(--line); border-radius:9px; padding:10px 14px; color:var(--text); font-family:inherit; font-size:14px; }
+  .search::placeholder{ color: var(--text-dim); }
+  .search-hint{ font-size:11px; color: var(--text-dim); margin:-12px 0 14px; }
+  .tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+  .tab{ background: var(--panel); border:1px solid var(--line); color:var(--text-dim); font-size:12.5px; padding:8px 12px; border-radius:20px; cursor:pointer; font-family:inherit; font-weight:500; }
+  .tab.active{ background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+
+  /* ---- cards ---- */
+  .list{ display:flex; flex-direction:column; gap:12px; }
+  .card{ background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; border-right:4px solid var(--slate); }
+  .card.acc-red{ border-right-color: var(--coral); }
+  .card.acc-yellow{ border-right-color: var(--amber); }
+  .card.acc-green{ border-right-color: var(--teal); }
+  .card.acc-blue{ border-right-color: var(--blue); }
+  .card.acc-grey{ border-right-color: var(--slate); opacity:.7; }
+  .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+  .ref{ font-size:12.5px; color: var(--text-dim); letter-spacing:.3px; }
+  .client{ font-size:17px; font-weight:700; margin-top:2px; }
+  .route{ font-size:13px; color: var(--text-dim); margin-top:4px; }
+  .meta-line{ font-size:12px; color: var(--text-dim); margin-top:3px; }
+  .meta-line span{ margin-left:8px; }
+  .badges{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .badge{ font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:20px; white-space:nowrap; }
+  .badge.st-booking{ background:var(--slate); color:var(--text); }
+  .badge.st-loading{ background: var(--amber-dim); color: var(--amber); }
+  .badge.st-sailed{ background: rgba(90,150,220,0.18); color:#7FB2E8; }
+  .badge.st-arrived{ background: rgba(90,150,220,0.28); color:#9FCBFF; }
+  .badge.st-delivered{ background: var(--teal-dim); color: var(--teal); }
+  .badge.st-cancelled{ background: rgba(255,255,255,0.06); color: var(--text-dim); text-decoration: line-through; }
+  .badge.urgent-flag{ background: var(--coral-dim); color: var(--coral); }
+  .badge.pay-pending{ background: var(--coral-dim); color: var(--coral); }
+  .badge.pay-partial{ background: var(--amber-dim); color: var(--amber); }
+  .badge.pay-paid{ background: var(--teal-dim); color: var(--teal); }
+
+  .timeline{ margin: 16px 0 10px; }
+  .timeline-track{ position:relative; display:flex; justify-content:space-between; align-items:center; }
+  .timeline-track::before{ content:''; position:absolute; top:8px; right:0; left:0; height:2px; background: var(--line); }
+  .tl-stage{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+  .tl-dot{ width:16px; height:16px; border-radius:50%; background: var(--ink); border:2px solid var(--slate); }
+  .tl-dot.filled{ background: var(--amber); border-color: var(--amber); }
+  .tl-dot.current{ background: var(--amber); border-color: var(--amber); box-shadow: 0 0 0 4px var(--amber-dim); }
+  .tl-dot.done-all{ background: var(--teal); border-color: var(--teal); }
+  .tl-label{ font-size:10.5px; color: var(--text-dim); text-align:center; }
+  .tl-label.current{ color: var(--amber); font-weight:600; }
+  .cancelled-strip{ padding:10px 0; color:var(--text-dim); font-size:13px; text-align:center; border-top:1px dashed var(--line); border-bottom:1px dashed var(--line); margin:14px 0; }
+
+  .card-foot{ display:flex; flex-direction:column; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+  .foot-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+  .dates{ display:flex; gap:16px; flex-wrap:wrap; }
+  .date-item{ font-size:12px; }
+  .date-item .lbl{ color: var(--text-dim); margin-left:4px; }
+  .date-item.overdue .val{ color: var(--coral); }
+  .date-item.soon .val{ color: var(--amber); }
+  .money{ font-size:12px; color: var(--text-dim); }
+  .money .val{ color: var(--text); font-weight:600; }
+  .docs-prog{ display:flex; align-items:center; gap:8px; font-size:12px; color: var(--text-dim); }
+  .prog-bar{ width:70px; height:6px; border-radius:4px; background: var(--line); overflow:hidden; }
+  .prog-fill{ height:100%; background: var(--teal); }
+  .row-actions{ display:flex; gap:6px; }
+  .icon-btn{ background:transparent; border:1px solid var(--line); color: var(--text-dim); width:30px; height:30px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .icon-btn:hover{ color: var(--amber); border-color: var(--amber); }
+  .icon-btn.del:hover{ color: var(--coral); border-color: var(--coral); }
+
+  .quick-flags{ display:flex; gap:6px; flex-wrap:wrap; }
+  .flag-btn{ font-family:inherit; font-size:11.5px; font-weight:600; border-radius:20px; padding:6px 11px; border:1px solid var(--line); background: transparent; color: var(--text-dim); cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+  .flag-btn::before{ content:'○'; font-size:10px; }
+  .flag-btn.on{ background: var(--teal-dim); color: var(--teal); border-color: var(--teal); }
+  .flag-btn.on::before{ content:'●'; }
+  .req-pill{ font-size:10.5px; padding:3px 8px; border-radius:20px; background: var(--amber-dim); color: var(--amber); font-weight:600; }
+  .req-pill.done{ background: var(--teal-dim); color: var(--teal); }
+
+  .empty{ text-align:center; padding: 60px 20px; color: var(--text-dim); }
+  .empty h3{ color: var(--text); font-family:'Oswald'; font-size:19px; margin-bottom:6px; }
+
+  /* ---- modal ---- */
+  .overlay{ position:fixed; inset:0; background: rgba(6,14,22,0.72); display:none; align-items:flex-start; justify-content:center; padding: 30px 16px; overflow-y:auto; z-index:50; }
+  .overlay.open{ display:flex; }
+  .modal{ background: var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; width:100%; max-width:660px; }
+  .modal h2{ font-family:'Oswald'; font-size:19px; margin:0 0 16px; }
+  .form-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+  .section-title{ grid-column:1/-1; font-family:'Oswald'; font-size:12px; letter-spacing:.6px; color:var(--amber); text-transform:uppercase; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+  .section-title:first-of-type{ margin-top:0; padding-top:0; border-top:none; }
+  .field{ display:flex; flex-direction:column; gap:5px; }
+  .field.full{ grid-column: 1 / -1; }
+  .field label{ font-size:12px; color: var(--text-dim); }
+  .field input, .field select, .field textarea{ background: var(--ink); border:1px solid var(--line); border-radius:8px; color: var(--text); padding:9px 11px; font-family:inherit; font-size:13.5px; }
+  .field input[readonly]{ color: var(--teal); font-weight:600; }
+  .field textarea{ resize:vertical; min-height:60px; }
+  .docs-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; grid-column:1/-1; }
+  .doc-check{ display:flex; align-items:center; gap:8px; font-size:13px; background: var(--ink); border:1px solid var(--line); border-radius:8px; padding:8px 10px; cursor:pointer; }
+  .doc-check input{ accent-color: var(--amber); width:15px; height:15px; }
+  .cond-doc{ grid-column:1/-1; display:flex; gap:8px; flex-wrap:wrap; }
+  .cond-doc .doc-check{ flex:1; min-width:150px; }
+  .cond-doc .doc-check.disabled{ opacity:.4; pointer-events:none; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+
+  @media (max-width:640px){
+    body{ padding: 18px 14px 90px; }
+    .stats{ grid-template-columns: repeat(2,1fr); }
+    .form-grid{ grid-template-columns: 1fr; }
+    .docs-grid{ grid-template-columns: 1fr; }
+    .cond-doc{ flex-direction:column; }
+    .tl-label{ font-size:8.5px; }
+    header{ flex-direction:column; align-items:stretch; }
+    .header-actions{ width:100%; }
+    .header-actions .btn{ flex:1; justify-content:center; padding:11px 10px; font-size:13px; }
+    .icon-btn{ width:38px; height:38px; }
+    .search{ padding:12px 14px; font-size:15px; }
+    .tab{ padding:9px 13px; font-size:12.5px; }
+    .card{ padding:14px; }
+    .foot-row{ flex-direction:column; align-items:flex-start; }
+    .row-actions{ align-self:flex-end; }
+    .modal{ padding:18px; border-radius:14px 14px 0 0; max-height:92vh; overflow-y:auto; }
+    .overlay{ padding:0; align-items:flex-end; }
+    .btn-primary, .btn-ghost{ padding:12px 16px; font-size:14.5px; }
+  }
+
+  /* ---- auth screen ---- */
+  .auth-overlay{ position:fixed; inset:0; background: var(--ink); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; overflow-y:auto; }
+  .auth-overlay.hidden{ display:none; }
+  .auth-card{ background: var(--panel); border:1px solid var(--line); border-radius:16px; padding:28px 26px; max-width:420px; width:100%; }
+  .auth-card .brand{ display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .auth-card .mark{ width:36px; height:36px; flex-shrink:0; }
+  .auth-card h2{ font-family:'Oswald', sans-serif; font-size:19px; margin:0 0 6px; color:var(--text); }
+  .auth-card .sub{ font-size:12.5px; color:var(--text-dim); margin:0 0 20px; line-height:1.6; }
+  .auth-field{ margin-bottom:14px; }
+  .auth-field label{ display:block; font-size:12.5px; color:var(--text-dim); margin-bottom:6px; }
+  .auth-field input{ width:100%; background: var(--panel-2); border:1px solid var(--line); border-radius:9px; padding:11px 13px; color:var(--text); font-family:inherit; font-size:14px; }
+  .auth-field input:focus{ outline:none; border-color: var(--teal); }
+  .auth-actions{ display:flex; flex-direction:column; gap:10px; margin-top:18px; }
+  .auth-actions .btn{ width:100%; justify-content:center; padding:11px 14px; }
+  .btn-whatsapp{ background:#25D366; color:#0B1F30; }
+  .btn-email{ background: var(--blue); color:#0B1F30; }
+  .auth-note{ background: var(--amber-dim); border:1px solid rgba(242,169,59,0.4); border-radius:10px; padding:10px 12px; font-size:12px; color: var(--text-dim); line-height:1.7; margin-bottom:16px; }
+  .auth-note b{ color: var(--amber); }
+  .auth-link{ text-align:center; font-size:12.5px; color: var(--text-dim); margin-top:14px; cursor:pointer; }
+  .auth-link:hover{ color: var(--teal); }
+  .auth-error{ color: var(--coral); font-size:12.5px; margin-top:-6px; margin-bottom:10px; display:none; }
+  .auth-error.show{ display:block; }
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH OVERLAY ============ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none">
+        <rect x="4" y="20" width="12" height="12" rx="1.5" fill="#3E5A72"/>
+        <rect x="18" y="20" width="12" height="12" rx="1.5" fill="#F2A93B"/>
+        <rect x="11" y="8" width="12" height="12" rx="1.5" fill="#1B3B55" stroke="#49CFC0" stroke-width="1.2"/>
+      </svg>
+      <div>
+        <h2>سجل الشحنات</h2>
+      </div>
+    </div>
+
+    <!-- Step 1: Register -->
+    <div id="authStepRegister">
+      <p class="sub">مفيش حساب مسجل على هذا المتصفح. سجّل بياناتك الأول عشان يتم تفعيل حسابك (مرة واحدة بس).</p>
+      <div class="auth-error" id="registerError"></div>
+      <div class="auth-field"><label>الاسم الأول</label><input type="text" id="reg_firstName" placeholder="مثال: محمد"></div>
+      <div class="auth-field"><label>اسم العائلة</label><input type="text" id="reg_lastName" placeholder="مثال: الشرقاوي"></div>
+      <div class="auth-field"><label>رقم الموبايل</label><input type="tel" id="reg_phone" placeholder="01xxxxxxxxx" class="mono" style="direction:ltr;text-align:right;"></div>
+      <div class="auth-field"><label>الإيميل بتاعك</label><input type="email" id="reg_email" placeholder="name@example.com" class="mono" style="direction:ltr;text-align:right;"></div>
+      <div class="auth-field"><label>كلمة السر</label><input type="password" id="reg_password" placeholder="6 أحرف على الأقل" class="mono" style="direction:ltr;text-align:right;"></div>
+      <div class="auth-field"><label>تأكيد كلمة السر</label><input type="password" id="reg_password2" placeholder="اكتب كلمة السر تاني" class="mono" style="direction:ltr;text-align:right;"></div>
+      <div class="auth-actions">
+        <button class="btn btn-primary" id="registerSubmitBtn">تسجيل وطلب كود التأكيد</button>
+      </div>
+      <div class="auth-link" id="goToLoginLink" style="display:none;">عندك حساب فعلاً؟ سجّل دخول</div>
+    </div>
+
+    <!-- Step 2: Verify -->
+    <div id="authStepVerify" style="display:none;">
+      <p class="sub">تم إنشاء طلب التسجيل. اتبع الخطوتين دول عشان تستلم كود التأكيد:</p>
+      <div class="auth-note">
+        <b>1.</b> اضغط "إرسال طلب على الإيميل" — هيفتح تطبيق الإيميل بتاعك برسالة جاهزة، بس اضغط إرسال.<br>
+        <b>2.</b> اضغط "إرسال طلب على واتساب" — هيفتح واتساب برسالة جاهزة لصاحب النظام، بس اضغط إرسال.<br>
+        بعد كده صاحب النظام هيبعتلك الكود على واتساب، واكتبه هنا تحت. الكود مطلوب مرة واحدة بس — بعد كده تدخل بالإيميل وكلمة السر.
+      </div>
+      <div class="auth-actions" style="margin-top:0;">
+        <button class="btn btn-email" id="authEmailBtn">📧 إرسال طلب على الإيميل</button>
+        <button class="btn btn-whatsapp" id="authWhatsappBtn">📱 إرسال طلب على واتساب</button>
+      </div>
+      <div class="auth-error" id="verifyError"></div>
+      <div class="auth-field" style="margin-top:16px;"><label>كود التأكيد اللي استلمته من صاحب النظام</label><input type="text" id="verify_code" placeholder="------" maxlength="6" class="mono" style="direction:ltr;text-align:center;letter-spacing:4px;font-size:18px;"></div>
+      <div class="auth-actions">
+        <button class="btn btn-primary" id="verifySubmitBtn">تأكيد الكود والدخول</button>
+      </div>
+      <div class="auth-link" id="authBackLink">رجوع / تسجيل ببيانات مختلفة</div>
+    </div>
+
+    <!-- Step 3: Login (returning user on this device) -->
+    <div id="authStepLogin" style="display:none;">
+      <p class="sub">أهلاً بيك تاني. سجّل دخولك بالإيميل وكلمة السر.</p>
+      <div class="auth-error" id="loginError"></div>
+      <div class="auth-field"><label>الإيميل</label><input type="email" id="login_email" placeholder="name@example.com" class="mono" style="direction:ltr;text-align:right;"></div>
+      <div class="auth-field"><label>كلمة السر</label><input type="password" id="login_password" placeholder="كلمة السر" class="mono" style="direction:ltr;text-align:right;"></div>
+      <div class="auth-actions">
+        <button class="btn btn-primary" id="loginSubmitBtn">تسجيل الدخول</button>
+      </div>
+      <div class="auth-link" id="goToRegisterLink">مستخدم جديد على الجهاز ده؟ سجّل حساب</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="appRoot" style="display:none;">
+  <header>
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 40 40" fill="none">
+        <rect x="4" y="20" width="12" height="12" rx="1.5" fill="#3E5A72"/>
+        <rect x="18" y="20" width="12" height="12" rx="1.5" fill="#F2A93B"/>
+        <rect x="11" y="8" width="12" height="12" rx="1.5" fill="#1B3B55" stroke="#49CFC0" stroke-width="1.2"/>
+      </svg>
+      <div>
+        <h1>سجل الشحنات</h1>
+        <p>متابعة عمليات التصدير — شحن بحري</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-ghost btn" id="logoutBtn">تسجيل خروج</button>
+      <button class="btn-ghost btn" id="backupBtn">Backup</button>
+      <button class="btn-ghost btn" id="restoreBtn">Restore</button>
+      <button class="btn-ghost btn" id="exportBtn">Export to Excel</button>
+      <button class="btn-ghost btn danger" id="resetBtn">مسح الكل</button>
+      <button class="btn btn-primary" id="newBtn">+ شحنة جديدة</button>
+    </div>
+    <input type="file" id="restoreInput" accept="application/json" style="display:none">
+  </header>
+
+  <div class="alerts" id="alertsPanel"></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="controls">
+    <input class="search" id="searchInput" placeholder="بحث برقم الشحنة، العميل، الـ Consignee، رقم الـ BL، الحاوية، أو الـ UCR...">
+    <div class="tabs" id="tabs"></div>
+  </div>
+  <div class="search-hint" style="display:none;"></div>
+
+  <div class="list" id="list"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">شحنة جديدة</h2>
+    <div class="form-grid">
+
+      <div class="section-title">بيانات أساسية</div>
+      <div class="field"><label>رقم الحجز / المرجع</label><input id="f_ref" placeholder="BKG-2026-001"></div>
+      <div class="field"><label>اسم العميل (الشاحن)</label><input id="f_client" placeholder="اسم الشركة"></div>
+      <div class="field"><label>المرسل إليه (Consignee)</label><input id="f_consignee"></div>
+      <div class="field"><label>شركة الشحن (Shipping Line)</label><input id="f_shippingLine"></div>
+      <div class="field"><label>اسم السفينة</label><input id="f_carrier"></div>
+      <div class="field"><label>البضاعة (Commodity)</label><input id="f_commodity"></div>
+
+      <div class="section-title">تفاصيل الحاوية والشحن</div>
+      <div class="field"><label>ميناء الشحن (POL)</label><input id="f_pol" placeholder="Alexandria"></div>
+      <div class="field"><label>ميناء الوصول (POD)</label><input id="f_pod" placeholder="Jebel Ali"></div>
+      <div class="field"><label>حجم الحاوية</label>
+        <select id="f_containerSize"><option value="">—</option><option>20GP</option><option>40GP</option><option>40HC</option><option>45HC</option></select>
+      </div>
+      <div class="field"><label>نوع الشحن</label>
+        <select id="f_freightType"><option value="">—</option><option>FCL</option><option>LCL</option></select>
+      </div>
+      <div class="field"><label>نوع البوليصة (BL Type)</label>
+        <select id="f_blType"><option value="">—</option><option value="Original">Original</option><option value="SWB">SWB</option><option value="Telex Release">Telex Release</option></select>
+      </div>
+      <div class="field"><label>رقم الحاوية</label><input id="f_container"></div>
+      <div class="field"><label>رقم البوليصة (BL)</label><input id="f_bl"></div>
+      <div class="field"><label>رقم السيل (Seal Number)</label><input id="f_sealNumber"></div>
+
+      <div class="section-title">أرقام مرجعية</div>
+      <div class="field"><label>رقم الـ UCR</label><input id="f_ucrNumber"></div>
+      <div class="field"><label>رقم الـ ACI</label><input id="f_aciNumber"></div>
+      <div class="field full"><label>رقم الإقرار الجمركي (Export Declaration No.)</label><input id="f_exportDeclarationNumber"></div>
+
+      <div class="section-title">الحالة والمواعيد</div>
+      <div class="field"><label>الحالة</label>
+        <select id="f_status">
+          <option value="booking">حجز مؤكد</option>
+          <option value="loading">تحميل</option>
+          <option value="sailed">تم الإبحار</option>
+          <option value="arrived">وصلت الميناء</option>
+          <option value="delivered">تم التسليم</option>
+          <option value="cancelled">ملغاة</option>
+        </select>
+      </div>
+      <div class="field"><label>معاد التحميل</label><input type="datetime-local" id="f_loading"></div>
+      <div class="field"><label>تاريخ الإبحار المتوقع (ETD)</label><input type="date" id="f_etd"></div>
+      <div class="field"><label>تاريخ الوصول المتوقع (ETA)</label><input type="date" id="f_eta"></div>
+      <div class="field"><label>آخر ميعاد تسليم المستندات (Cut-off)</label><input type="date" id="f_cutoff"></div>
+
+      <div class="field full"><label>تبليغ الجهات</label>
+        <div class="docs-grid">
+          <label class="doc-check"><input type="checkbox" id="f_customsNotified"> تم إبلاغ التخليص الجمركي</label>
+          <label class="doc-check"><input type="checkbox" id="f_transportNotified"> تم إبلاغ النقل</label>
+        </div>
+      </div>
+
+      <div class="section-title">المصروفات وحالة السداد</div>
+      <div class="field"><label>حالة السداد</label>
+        <select id="f_paymentStatus">
+          <option value="pending">لم يتم السداد</option>
+          <option value="partial">مدفوع جزئيًا</option>
+          <option value="paid">مدفوع بالكامل</option>
+        </select>
+      </div>
+      <div class="field"><label>الإجمالي (Total Charges)</label><input id="f_total" readonly></div>
+      <div class="field"><label>أجرة الشحن البحري (Ocean Freight)</label><input type="number" step="0.01" id="f_oceanFreight"></div>
+      <div class="field"><label>أرضية الميناء (THC)</label><input type="number" step="0.01" id="f_thc"></div>
+      <div class="field full"><label>رسوم المستندات (Documentation Fees)</label><input type="number" step="0.01" id="f_docFees"></div>
+
+      <div class="section-title">المستندات</div>
+      <div class="docs-grid">
+        <label class="doc-check"><input type="checkbox" id="d_invoice"> فاتورة تجارية</label>
+        <label class="doc-check"><input type="checkbox" id="d_packing"> قائمة التعبئة</label>
+        <label class="doc-check"><input type="checkbox" id="d_bl"> بوليصة الشحن (BL)</label>
+        <label class="doc-check"><input type="checkbox" id="d_insurance"> بوليصة التأمين</label>
+        <label class="doc-check"><input type="checkbox" id="d_customs"> الإقرار الجمركي</label>
+      </div>
+      <div class="field full" id="condDocsContainer"></div>
+
+      <div class="section-title">ملاحظات</div>
+      <div class="field full"><textarea id="f_notes"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelBtn">إلغاء</button>
+      <button class="btn btn-primary" id="saveBtn">حفظ الشحنة</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmOverlay">
+  <div class="modal" style="max-width:380px; margin-top:120px;">
+    <h2 id="confirmMsg" style="font-size:16px;"></h2>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="confirmNo">إلغاء</button>
+      <button class="btn btn-primary" id="confirmYes" style="background:var(--coral);">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'shipment_tracker_data_v1';
+const STAGES = [
+  {key:'booking', label:'حجز مؤكد'},
+  {key:'loading', label:'تحميل'},
+  {key:'sailed', label:'إبحار'},
+  {key:'arrived', label:'وصول الميناء'},
+  {key:'delivered', label:'تسليم'}
+];
+const ALWAYS_DOC_KEYS = ['invoice','packing','bl','insurance','customs'];
+const COND_DOC_KEYS = ['coo','form13','msds','health','phyto','eur1','inspection'];
+const DOC_LABELS = {
+  invoice:'فاتورة تجارية', packing:'قائمة التعبئة', bl:'بوليصة الشحن', insurance:'بوليصة التأمين', customs:'الإقرار الجمركي',
+  coo:'شهادة المنشأ', form13:'نموذج ١٣', msds:'MSDS', health:'شهادة صحية (Health Cert.)',
+  phyto:'شهادة صحة نباتية (Phytosanitary)', eur1:'EUR.1', inspection:'شهادة فحص (Inspection Cert.)'
+};
+const PAY_LABELS = {pending:'لم يتم السداد', partial:'مدفوع جزئيًا', paid:'مدفوع بالكامل'};
+
+let shipments = [];
+let activeFilter = 'all';
+let editingId = null;
+
+function uid(){ return 'sh_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    shipments = raw ? JSON.parse(raw) : [];
+  }catch(e){ console.error('load error', e); shipments = []; }
+  render();
+}
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(shipments));
+  }catch(e){ console.error('storage error', e); }
+}
+
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr + 'T00:00:00');
+  return Math.round((d - today) / 86400000);
+}
+function isUrgent(s){
+  if(s.status === 'delivered' || s.status === 'cancelled') return false;
+  const du = [daysUntil(s.cutoff), daysUntil(s.etd)].filter(v => v !== null);
+  return du.some(v => v <= 2);
+}
+function cardAccent(s){
+  if(s.status === 'cancelled') return 'grey';
+  if(isUrgent(s)) return 'red';
+  if(s.status === 'delivered') return 'green';
+  if(s.status === 'arrived') return 'blue';
+  return 'yellow';
+}
+function fmtDate(dateStr){
+  if(!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('ar-EG', {day:'2-digit', month:'short'});
+}
+function fmtDateTime(dtStr){
+  if(!dtStr) return '—';
+  const d = new Date(dtStr);
+  return d.toLocaleDateString('ar-EG', {day:'2-digit', month:'short'}) + ' · ' + d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+}
+function fmtMoney(n){
+  n = Number(n) || 0;
+  return n.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
+function docsProgress(s){
+  const docs = s.docs || {};
+  let total = ALWAYS_DOC_KEYS.length;
+  let done = ALWAYS_DOC_KEYS.filter(k => docs[k]).length;
+  COND_DOC_KEYS.forEach(k => { if(s[k+'Required']){ total++; if(docs[k]) done++; } });
+  return {done, total};
+}
+function totalCharges(s){
+  return (Number(s.oceanFreight)||0) + (Number(s.thc)||0) + (Number(s.docFees)||0);
+}
+
+function renderStats(){
+  const active = shipments.filter(s => s.status !== 'delivered' && s.status !== 'cancelled');
+  const urgent = shipments.filter(isUrgent);
+  const delivered = shipments.filter(s => s.status === 'delivered');
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="num">${shipments.length}</div><div class="lbl">إجمالي الشحنات</div></div>
+    <div class="stat"><div class="num">${active.length}</div><div class="lbl">قيد التنفيذ</div></div>
+    <div class="stat urgent"><div class="num">${urgent.length}</div><div class="lbl">تحتاج متابعة عاجلة</div></div>
+    <div class="stat done"><div class="num">${delivered.length}</div><div class="lbl">تم التسليم</div></div>
+  `;
+}
+
+function renderAlerts(){
+  const cutoffSoon = shipments.filter(s => s.status!=='delivered' && s.status!=='cancelled' && daysUntil(s.cutoff)!==null && daysUntil(s.cutoff)<=3);
+  const etdSoon = shipments.filter(s => s.status!=='delivered' && s.status!=='cancelled' && daysUntil(s.etd)!==null && daysUntil(s.etd)>=0 && daysUntil(s.etd)<=2);
+  const arrivedNotDelivered = shipments.filter(s => s.status === 'arrived');
+
+  const groups = [
+    {items:cutoffSoon, cls:'a-red', title:'اقترب الـ Cut-off'},
+    {items:etdSoon, cls:'a-amber', title:'الـ ETD خلال 48 ساعة'},
+    {items:arrivedNotDelivered, cls:'a-blue', title:'وصلت ولم يتم تسليمها بعد'}
+  ].filter(g => g.items.length > 0);
+
+  const panel = document.getElementById('alertsPanel');
+  if(groups.length === 0){ panel.innerHTML = ''; return; }
+  panel.innerHTML = groups.map(g => `
+    <div class="alert-box ${g.cls}">
+      <div class="alert-title">${g.title} (${g.items.length})</div>
+      <div class="alert-chips">
+        ${g.items.map(s => `<button class="alert-chip" data-open="${s.id}">${s.ref||'بدون رقم'} · ${s.client||''}</button>`).join('')}
+      </div>
+    </div>
+  `).join('');
+  panel.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openModal(b.dataset.open));
+}
+
+function renderTabs(){
+  const counts = {all: shipments.length};
+  STAGES.forEach(st => counts[st.key] = shipments.filter(s=>s.status===st.key).length);
+  counts.urgent = shipments.filter(isUrgent).length;
+  const tabsDef = [
+    {key:'all', label:'الكل'},
+    ...STAGES.map(s=>({key:s.key,label:s.label})),
+    {key:'urgent', label:'عاجل'}
+  ];
+  document.getElementById('tabs').innerHTML = tabsDef.map(t => `
+    <button class="tab ${activeFilter===t.key?'active':''}" data-filter="${t.key}">${t.label} (${counts[t.key]||0})</button>
+  `).join('');
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.onclick = () => { activeFilter = btn.dataset.filter; render(); };
+  });
+}
+
+function timelineHTML(s){
+  if(s.status === 'cancelled'){
+    return `<div class="cancelled-strip">تم إلغاء هذه الشحنة</div>`;
+  }
+  const curIdx = STAGES.findIndex(st => st.key === s.status);
+  return `<div class="timeline"><div class="timeline-track">
+    ${STAGES.map((st,i)=>{
+      let dotClass = 'tl-dot';
+      let lblClass = 'tl-label';
+      if(s.status==='delivered'){ dotClass += ' done-all'; }
+      else if(i < curIdx) dotClass += ' filled';
+      else if(i === curIdx){ dotClass += ' current'; lblClass += ' current'; }
+      return `<div class="tl-stage"><div class="${dotClass}"></div><div class="${lblClass}">${st.label}</div></div>`;
+    }).join('')}
+  </div></div>`;
+}
+
+function cardHTML(s){
+  const urgent = isUrgent(s);
+  const {done: docsDone, total: docsTotal} = docsProgress(s);
+  const cutoffDays = daysUntil(s.cutoff);
+  const etdDays = daysUntil(s.etd);
+  const cutoffClass = cutoffDays!==null && cutoffDays<0 ? 'overdue' : (cutoffDays!==null && cutoffDays<=2 ? 'soon' : '');
+  const etdClass = etdDays!==null && etdDays<0 ? 'overdue' : (etdDays!==null && etdDays<=2 ? 'soon' : '');
+  const statusLabel = (STAGES.find(st=>st.key===s.status) || {label:'ملغاة'}).label;
+  const reqPills = COND_DOC_KEYS.filter(k => s[k+'Required']).map(k =>
+    `<span class="req-pill ${s.docs&&s.docs[k]?'done':''}">${DOC_LABELS[k]} ${s.docs&&s.docs[k]?'✓':''}</span>`
+  ).join('');
+  const metaBits = [s.containerSize, s.freightType, s.blType, s.commodity].filter(Boolean).join(' · ');
+  const total = totalCharges(s);
+  return `
+  <div class="card acc-${cardAccent(s)}">
+    <div class="card-top">
+      <div>
+        <div class="ref mono">${s.ref || 'بدون رقم'}</div>
+        <div class="client">${s.client || 'بدون اسم عميل'}</div>
+        <div class="route">${s.pol||'—'} <span class="mono">→</span> ${s.pod||'—'} ${s.shippingLine?'· '+s.shippingLine:''}</div>
+        ${metaBits ? `<div class="meta-line">${metaBits}</div>` : ''}
+      </div>
+      <div class="badges">
+        ${urgent?'<span class="badge urgent-flag">عاجل</span>':''}
+        <span class="badge st-${s.status}">${statusLabel}</span>
+      </div>
+    </div>
+    ${timelineHTML(s)}
+    ${reqPills ? `<div class="badges" style="margin:8px 0;">${reqPills}</div>` : ''}
+    <div class="card-foot">
+      <div class="foot-row">
+        <div class="dates">
+          ${s.loading ? `<div class="date-item"><span class="lbl">تحميل</span><span class="val mono">${fmtDateTime(s.loading)}</span></div>` : ''}
+          <div class="date-item ${etdClass}"><span class="lbl">ETD</span><span class="val mono">${fmtDate(s.etd)}</span></div>
+          <div class="date-item"><span class="lbl">ETA</span><span class="val mono">${fmtDate(s.eta)}</span></div>
+          <div class="date-item ${cutoffClass}"><span class="lbl">Cut-off</span><span class="val mono">${fmtDate(s.cutoff)}</span></div>
+        </div>
+        <div class="quick-flags">
+          <button class="flag-btn ${s.customsNotified?'on':''}" data-toggle="customsNotified" data-id="${s.id}">تخليص</button>
+          <button class="flag-btn ${s.transportNotified?'on':''}" data-toggle="transportNotified" data-id="${s.id}">نقل</button>
+        </div>
+      </div>
+      <div class="foot-row">
+        <div class="money">
+          ${total>0 ? `<span class="badge pay-${s.paymentStatus||'pending'}">${PAY_LABELS[s.paymentStatus||'pending']}</span> <span class="val mono">${fmtMoney(total)}</span>` : ''}
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="docs-prog">
+            <div class="prog-bar"><div class="prog-fill" style="width:${docsTotal? (docsDone/docsTotal)*100 : 0}%"></div></div>
+            <span>${docsDone}/${docsTotal} مستندات</span>
+          </div>
+          <div class="row-actions">
+            <button class="icon-btn" title="تعديل" data-edit="${s.id}">✎</button>
+            <button class="icon-btn del" title="حذف" data-del="${s.id}">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function render(){
+  renderStats();
+  renderAlerts();
+  renderTabs();
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  let items = shipments.filter(s=>{
+    if(activeFilter==='urgent') return isUrgent(s);
+    if(activeFilter!=='all') return s.status === activeFilter;
+    return true;
+  }).filter(s => {
+    if(!q) return true;
+    const fields = [s.ref, s.client, s.consignee, s.bl, s.container, s.ucrNumber];
+    return fields.some(f => (f||'').toLowerCase().includes(q));
+  });
+  items.sort((a,b)=>{
+    const da = Math.min(...[daysUntil(a.cutoff),daysUntil(a.etd)].filter(v=>v!==null).concat([9999]));
+    const db = Math.min(...[daysUntil(b.cutoff),daysUntil(b.etd)].filter(v=>v!==null).concat([9999]));
+    return da - db;
+  });
+  const listEl = document.getElementById('list');
+  if(items.length === 0){
+    listEl.innerHTML = `<div class="empty"><h3>${shipments.length===0 ? 'لسه مفيش شحنات مسجلة' : 'مفيش نتائج مطابقة'}</h3><p>${shipments.length===0 ? 'ابدئي بتسجيل أول شحنة من زرار "شحنة جديدة".' : 'جربي تغيري كلمة البحث أو الفلتر.'}</p></div>`;
+    return;
+  }
+  listEl.innerHTML = items.map(cardHTML).join('');
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openModal(b.dataset.edit));
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteShipment(b.dataset.del));
+  document.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => toggleFlag(b.dataset.id, b.dataset.toggle));
+}
+
+function toggleFlag(id, field){
+  const s = shipments.find(x=>x.id===id);
+  if(!s) return;
+  s[field] = !s[field];
+  saveData();
+  render();
+}
+
+/* ---- conditional docs (dynamic) ---- */
+function renderCondDocFields(){
+  const wrap = document.getElementById('condDocsContainer');
+  wrap.innerHTML = '<label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px;">مستندات مشروطة</label>' +
+    '<div class="docs-grid">' + COND_DOC_KEYS.map(k => `
+    <div class="cond-doc">
+      <label class="doc-check"><input type="checkbox" id="req_${k}"> ${DOC_LABELS[k]} مطلوبة؟</label>
+      <label class="doc-check" id="wrap_${k}"><input type="checkbox" id="d_${k}"> تم الاستلام</label>
+    </div>`).join('') + '</div>';
+  COND_DOC_KEYS.forEach(k => { document.getElementById('req_'+k).onchange = updateCondDocVisibility; });
+}
+function updateCondDocVisibility(){
+  COND_DOC_KEYS.forEach(k => {
+    document.getElementById('wrap_'+k).classList.toggle('disabled', !document.getElementById('req_'+k).checked);
+  });
+}
+
+function recalcTotal(){
+  const total = (Number(document.getElementById('f_oceanFreight').value)||0) +
+                (Number(document.getElementById('f_thc').value)||0) +
+                (Number(document.getElementById('f_docFees').value)||0);
+  document.getElementById('f_total').value = fmtMoney(total);
+}
+
+function openModal(id){
+  editingId = id || null;
+  const s = id ? shipments.find(x=>x.id===id) : {};
+  document.getElementById('modalTitle').textContent = id ? 'تعديل الشحنة' : 'شحنة جديدة';
+  document.getElementById('f_ref').value = s.ref || '';
+  document.getElementById('f_client').value = s.client || '';
+  document.getElementById('f_consignee').value = s.consignee || '';
+  document.getElementById('f_shippingLine').value = s.shippingLine || '';
+  document.getElementById('f_carrier').value = s.carrier || '';
+  document.getElementById('f_commodity').value = s.commodity || '';
+  document.getElementById('f_pol').value = s.pol || '';
+  document.getElementById('f_pod').value = s.pod || '';
+  document.getElementById('f_containerSize').value = s.containerSize || '';
+  document.getElementById('f_freightType').value = s.freightType || '';
+  document.getElementById('f_blType').value = s.blType || '';
+  document.getElementById('f_container').value = s.container || '';
+  document.getElementById('f_bl').value = s.bl || '';
+  document.getElementById('f_sealNumber').value = s.sealNumber || '';
+  document.getElementById('f_ucrNumber').value = s.ucrNumber || '';
+  document.getElementById('f_aciNumber').value = s.aciNumber || '';
+  document.getElementById('f_exportDeclarationNumber').value = s.exportDeclarationNumber || '';
+  document.getElementById('f_status').value = s.status || 'booking';
+  document.getElementById('f_loading').value = s.loading || '';
+  document.getElementById('f_etd').value = s.etd || '';
+  document.getElementById('f_eta').value = s.eta || '';
+  document.getElementById('f_cutoff').value = s.cutoff || '';
+  document.getElementById('f_customsNotified').checked = !!s.customsNotified;
+  document.getElementById('f_transportNotified').checked = !!s.transportNotified;
+  document.getElementById('f_paymentStatus').value = s.paymentStatus || 'pending';
+  document.getElementById('f_oceanFreight').value = s.oceanFreight || '';
+  document.getElementById('f_thc').value = s.thc || '';
+  document.getElementById('f_docFees').value = s.docFees || '';
+  recalcTotal();
+  document.getElementById('f_notes').value = s.notes || '';
+  ALWAYS_DOC_KEYS.forEach(k => document.getElementById('d_'+k).checked = !!(s.docs && s.docs[k]));
+  COND_DOC_KEYS.forEach(k => {
+    document.getElementById('req_'+k).checked = !!s[k+'Required'];
+    document.getElementById('d_'+k).checked = !!(s.docs && s.docs[k]);
+  });
+  updateCondDocVisibility();
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); editingId = null; }
+
+function saveShipment(){
+  const docs = {};
+  ALWAYS_DOC_KEYS.forEach(k => docs[k] = document.getElementById('d_'+k).checked);
+  COND_DOC_KEYS.forEach(k => docs[k] = document.getElementById('d_'+k).checked);
+  const data = {
+    id: editingId || uid(),
+    ref: document.getElementById('f_ref').value.trim(),
+    client: document.getElementById('f_client').value.trim(),
+    consignee: document.getElementById('f_consignee').value.trim(),
+    shippingLine: document.getElementById('f_shippingLine').value.trim(),
+    carrier: document.getElementById('f_carrier').value.trim(),
+    commodity: document.getElementById('f_commodity').value.trim(),
+    pol: document.getElementById('f_pol').value.trim(),
+    pod: document.getElementById('f_pod').value.trim(),
+    containerSize: document.getElementById('f_containerSize').value,
+    freightType: document.getElementById('f_freightType').value,
+    blType: document.getElementById('f_blType').value,
+    container: document.getElementById('f_container').value.trim(),
+    bl: document.getElementById('f_bl').value.trim(),
+    sealNumber: document.getElementById('f_sealNumber').value.trim(),
+    ucrNumber: document.getElementById('f_ucrNumber').value.trim(),
+    aciNumber: document.getElementById('f_aciNumber').value.trim(),
+    exportDeclarationNumber: document.getElementById('f_exportDeclarationNumber').value.trim(),
+    status: document.getElementById('f_status').value,
+    loading: document.getElementById('f_loading').value,
+    etd: document.getElementById('f_etd').value,
+    eta: document.getElementById('f_eta').value,
+    cutoff: document.getElementById('f_cutoff').value,
+    customsNotified: document.getElementById('f_customsNotified').checked,
+    transportNotified: document.getElementById('f_transportNotified').checked,
+    paymentStatus: document.getElementById('f_paymentStatus').value,
+    oceanFreight: Number(document.getElementById('f_oceanFreight').value) || 0,
+    thc: Number(document.getElementById('f_thc').value) || 0,
+    docFees: Number(document.getElementById('f_docFees').value) || 0,
+    notes: document.getElementById('f_notes').value.trim(),
+    docs,
+    createdAt: editingId ? (shipments.find(x=>x.id===editingId)||{}).createdAt : Date.now()
+  };
+  COND_DOC_KEYS.forEach(k => data[k+'Required'] = document.getElementById('req_'+k).checked);
+  if(editingId){
+    shipments = shipments.map(s => s.id === editingId ? data : s);
+  } else {
+    shipments.push(data);
+  }
+  saveData();
+  closeModal();
+  render();
+}
+
+function deleteShipment(id){
+  showConfirm('تحذفي الشحنة دي؟').then(ok => {
+    if(!ok) return;
+    shipments = shipments.filter(s => s.id !== id);
+    saveData();
+    render();
+  });
+}
+
+function showConfirm(message){
+  return new Promise(resolve => {
+    document.getElementById('confirmMsg').textContent = message;
+    const ov = document.getElementById('confirmOverlay');
+    ov.classList.add('open');
+    const yes = document.getElementById('confirmYes');
+    const no = document.getElementById('confirmNo');
+    function cleanup(result){
+      ov.classList.remove('open');
+      yes.onclick = null; no.onclick = null; ov.onclick = null;
+      resolve(result);
+    }
+    yes.onclick = () => cleanup(true);
+    no.onclick = () => cleanup(false);
+    ov.onclick = (e) => { if(e.target.id==='confirmOverlay') cleanup(false); };
+  });
+}
+
+/* ---- export / backup / restore ---- */
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportToExcel(){
+  if(shipments.length === 0){ alert('مفيش شحنات لتصديرها.'); return; }
+  const rows = shipments.map(s => ({
+    'المرجع': s.ref, 'العميل': s.client, 'Consignee': s.consignee, 'شركة الشحن': s.shippingLine, 'السفينة': s.carrier,
+    'البضاعة': s.commodity, 'POL': s.pol, 'POD': s.pod, 'حجم الحاوية': s.containerSize, 'نوع الشحن': s.freightType,
+    'BL Type': s.blType, 'رقم الحاوية': s.container, 'رقم BL': s.bl, 'رقم السيل': s.sealNumber,
+    'UCR': s.ucrNumber, 'ACI': s.aciNumber, 'رقم الإقرار الجمركي': s.exportDeclarationNumber,
+    'الحالة': (STAGES.find(st=>st.key===s.status)||{label:s.status}).label,
+    'معاد التحميل': s.loading, 'ETD': s.etd, 'ETA': s.eta, 'Cut-off': s.cutoff,
+    'تبليغ التخليص': s.customsNotified ? 'نعم' : 'لا', 'تبليغ النقل': s.transportNotified ? 'نعم' : 'لا',
+    'حالة السداد': PAY_LABELS[s.paymentStatus||'pending'],
+    'Ocean Freight': s.oceanFreight||0, 'THC': s.thc||0, 'Documentation Fees': s.docFees||0, 'الإجمالي': totalCharges(s),
+    'ملاحظات': s.notes
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'الشحنات');
+  XLSX.writeFile(wb, 'shipments_' + new Date().toISOString().slice(0,10) + '.xlsx');
+}
+
+function backupData(){
+  if(shipments.length === 0){ alert('مفيش بيانات لعمل نسخة احتياطية.'); return; }
+  downloadBlob(JSON.stringify(shipments, null, 2), 'shipments_backup_' + new Date().toISOString().slice(0,10) + '.json', 'application/json');
+}
+
+function restoreData(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!Array.isArray(parsed)) throw new Error('invalid format');
+      showConfirm('هيتم استبدال كل البيانات الحالية بالملف ده. تأكيد؟').then(ok => {
+        if(!ok) return;
+        shipments = parsed;
+        saveData();
+        render();
+      });
+    }catch(e){
+      alert('الملف ده مش بصيغة صحيحة.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---- wiring ---- */
+renderCondDocFields();
+document.getElementById('newBtn').onclick = () => openModal(null);
+document.getElementById('cancelBtn').onclick = closeModal;
+document.getElementById('saveBtn').onclick = saveShipment;
+document.getElementById('overlay').onclick = (e) => { if(e.target.id==='overlay') closeModal(); };
+document.getElementById('searchInput').oninput = render;
+document.getElementById('exportBtn').onclick = exportToExcel;
+document.getElementById('backupBtn').onclick = backupData;
+document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreInput').click();
+document.getElementById('restoreInput').onchange = (e) => { if(e.target.files[0]) restoreData(e.target.files[0]); e.target.value=''; };
+['f_oceanFreight','f_thc','f_docFees'].forEach(id => document.getElementById(id).oninput = recalcTotal);
+document.getElementById('resetBtn').onclick = () => {
+  showConfirm('هيتم مسح كل الشحنات المسجلة نهائيًا. تأكيد؟').then(ok => {
+    if(!ok) return;
+    shipments = [];
+    saveData();
+    render();
+  });
+};
+
+/* ============ AUTH ============ */
+const AUTH_USERS_KEY = 'str_auth_users';       // كل المستخدمين اللي سجلوا وتم تفعيلهم على الجهاز ده (دايم، ميتمسحش عند الخروج)
+const AUTH_SESSION_KEY = 'str_auth_session';   // إيميل المستخدم اللي داخل حاليًا (يتمسح عند تسجيل الخروج)
+const AUTH_PENDING_KEY = 'str_auth_pending';   // طلب تسجيل لسه في انتظار كود التأكيد
+const OWNER_EMAIL = 'mhelsharkawyy@gmail.com';
+const OWNER_WHATSAPP = '201000700163'; // 01000700163 بصيغة دولية بدون الصفر وبكود مصر 20
+const WEB3FORMS_ACCESS_KEY = 'fe3da370-ad64-4f8b-8543-a9099b44db71';
+
+function sendCodeEmailAuto(pending){
+  if(!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY.indexOf('PASTE_') === 0) return; // لسه محتاج Access Key
+  fetch('https://api.web3forms.com/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      access_key: WEB3FORMS_ACCESS_KEY,
+      subject: 'طلب تسجيل جديد - سجل الشحنات',
+      from_name: pending.firstName + ' ' + pending.lastName,
+      'الاسم': pending.firstName + ' ' + pending.lastName,
+      'رقم الموبايل': pending.phone,
+      'الإيميل': pending.email,
+      'كود التأكيد': pending.code,
+      'وقت الطلب': new Date(pending.createdAt).toLocaleString('ar-EG')
+    })
+  }).catch(err => console.error('email send error', err));
+}
+
+function genCode(){
+  return String(Math.floor(100000 + Math.random()*900000));
+}
+
+function getUsers(){
+  try{ return JSON.parse(localStorage.getItem(AUTH_USERS_KEY)) || []; }catch(e){ return []; }
+}
+function saveUsers(list){
+  localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(list));
+}
+function getPendingReg(){
+  try{ return JSON.parse(localStorage.getItem(AUTH_PENDING_KEY)); }catch(e){ return null; }
+}
+function getSessionEmail(){
+  return localStorage.getItem(AUTH_SESSION_KEY);
+}
+
+function showApp(){
+  document.getElementById('authOverlay').classList.add('hidden');
+  document.getElementById('appRoot').style.display = '';
+}
+function showAuthOverlay(){
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('authOverlay').classList.remove('hidden');
+}
+function hideAllAuthSteps(){
+  document.getElementById('authStepRegister').style.display = 'none';
+  document.getElementById('authStepVerify').style.display = 'none';
+  document.getElementById('authStepLogin').style.display = 'none';
+}
+function showRegisterStep(){
+  hideAllAuthSteps();
+  document.getElementById('authStepRegister').style.display = '';
+  document.getElementById('registerError').classList.remove('show');
+  document.getElementById('goToLoginLink').style.display = getUsers().length > 0 ? '' : 'none';
+}
+function showVerifyStep(pending){
+  hideAllAuthSteps();
+  document.getElementById('authStepVerify').style.display = '';
+  document.getElementById('verifyError').classList.remove('show');
+  document.getElementById('verify_code').value = '';
+  wireAuthActionLinks(pending);
+}
+function showLoginStep(){
+  hideAllAuthSteps();
+  document.getElementById('authStepLogin').style.display = '';
+  document.getElementById('loginError').classList.remove('show');
+}
+
+function buildEmailLink(pending){
+  const subject = encodeURIComponent('طلب تسجيل جديد - سجل الشحنات');
+  const body = encodeURIComponent(
+    'اسم مقدم الطلب: ' + pending.firstName + ' ' + pending.lastName + '\n' +
+    'رقم الموبايل: ' + pending.phone + '\n' +
+    'الإيميل: ' + pending.email + '\n' +
+    'كود التأكيد: ' + pending.code + '\n' +
+    'وقت الطلب: ' + new Date(pending.createdAt).toLocaleString('ar-EG')
+  );
+  return 'mailto:' + OWNER_EMAIL + '?subject=' + subject + '&body=' + body;
+}
+function buildWhatsappLink(pending){
+  const text = encodeURIComponent(
+    'مرحبًا، أنا ' + pending.firstName + ' ' + pending.lastName + ' ورقم موبايلي ' + pending.phone +
+    '. بعتّ طلب تسجيل على سجل الشحنات وكود التأكيد اتبعت على إيميلك (' + OWNER_EMAIL + '). ' +
+    'برجاء إرسال الكود لي على واتساب للتأكيد.'
+  );
+  return 'https://wa.me/' + OWNER_WHATSAPP + '?text=' + text;
+}
+function wireAuthActionLinks(pending){
+  document.getElementById('authEmailBtn').onclick = () => { window.location.href = buildEmailLink(pending); };
+  document.getElementById('authWhatsappBtn').onclick = () => { window.open(buildWhatsappLink(pending), '_blank'); };
+}
+
+function submitRegister(){
+  const firstName = document.getElementById('reg_firstName').value.trim();
+  const lastName = document.getElementById('reg_lastName').value.trim();
+  const phone = document.getElementById('reg_phone').value.trim();
+  const email = document.getElementById('reg_email').value.trim().toLowerCase();
+  const password = document.getElementById('reg_password').value;
+  const password2 = document.getElementById('reg_password2').value;
+  const errEl = document.getElementById('registerError');
+
+  if(!firstName || !lastName || !phone || !email || !password){
+    errEl.textContent = 'من فضلك اكمّل كل الحقول.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(!/^01[0-9]{9}$/.test(phone)){
+    errEl.textContent = 'رقم الموبايل لازم يكون رقم مصري صحيح (يبدأ بـ 01 ومكون من 11 رقم).';
+    errEl.classList.add('show');
+    return;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errEl.textContent = 'من فضلك اكتب إيميل صحيح.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(password.length < 6){
+    errEl.textContent = 'كلمة السر لازم تكون 6 أحرف على الأقل.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(password !== password2){
+    errEl.textContent = 'كلمة السر وتأكيدها غير متطابقين.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(getUsers().some(u => u.email === email)){
+    errEl.textContent = 'الإيميل ده مسجل قبل كده على الجهاز ده. جرّب تسجّل دخول.';
+    errEl.classList.add('show');
+    return;
+  }
+  errEl.classList.remove('show');
+  const pending = { firstName, lastName, phone, email, password, code: genCode(), createdAt: Date.now() };
+  localStorage.setItem(AUTH_PENDING_KEY, JSON.stringify(pending));
+  sendCodeEmailAuto(pending);
+  showVerifyStep(pending);
+}
+
+function submitVerify(){
+  const pending = getPendingReg();
+  const errEl = document.getElementById('verifyError');
+  if(!pending){ showRegisterStep(); return; }
+  const entered = document.getElementById('verify_code').value.trim();
+  if(entered !== pending.code){
+    errEl.textContent = 'الكود مش صحيح. تأكد من الكود اللي استلمته على واتساب من صاحب النظام.';
+    errEl.classList.add('show');
+    return;
+  }
+  const users = getUsers();
+  users.push({
+    firstName: pending.firstName,
+    lastName: pending.lastName,
+    phone: pending.phone,
+    email: pending.email,
+    password: pending.password,
+    verifiedAt: Date.now()
+  });
+  saveUsers(users);
+  localStorage.removeItem(AUTH_PENDING_KEY);
+  localStorage.setItem(AUTH_SESSION_KEY, pending.email);
+  showApp();
+}
+
+function submitLogin(){
+  const email = document.getElementById('login_email').value.trim().toLowerCase();
+  const password = document.getElementById('login_password').value;
+  const errEl = document.getElementById('loginError');
+  const user = getUsers().find(u => u.email === email && u.password === password);
+  if(!user){
+    errEl.textContent = 'الإيميل أو كلمة السر غلط.';
+    errEl.classList.add('show');
+    return;
+  }
+  errEl.classList.remove('show');
+  localStorage.setItem(AUTH_SESSION_KEY, user.email);
+  showApp();
+}
+
+function logoutUser(){
+  showConfirm('هيتم تسجيل خروجك من الجهاز ده. تأكيد؟').then(ok => {
+    if(!ok) return;
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    localStorage.removeItem(AUTH_PENDING_KEY);
+    document.getElementById('login_email').value = '';
+    document.getElementById('login_password').value = '';
+    initAuth();
+  });
+}
+
+function initAuth(){
+  const sessionEmail = getSessionEmail();
+  if(sessionEmail && getUsers().some(u => u.email === sessionEmail)){ showApp(); return; }
+  const pending = getPendingReg();
+  if(pending){ showVerifyStep(pending); showAuthOverlay(); return; }
+  if(getUsers().length > 0){ showLoginStep(); } else { showRegisterStep(); }
+  showAuthOverlay();
+}
+
+document.getElementById('registerSubmitBtn').onclick = submitRegister;
+document.getElementById('verifySubmitBtn').onclick = submitVerify;
+document.getElementById('loginSubmitBtn').onclick = submitLogin;
+document.getElementById('authBackLink').onclick = () => {
+  localStorage.removeItem(AUTH_PENDING_KEY);
+  showRegisterStep();
+};
+document.getElementById('goToLoginLink').onclick = showLoginStep;
+document.getElementById('goToRegisterLink').onclick = showRegisterStep;
+document.getElementById('logoutBtn').onclick = logoutUser;
+document.getElementById('reg_password2').addEventListener('keydown', e => { if(e.key === 'Enter') submitRegister(); });
+document.getElementById('verify_code').addEventListener('keydown', e => { if(e.key === 'Enter') submitVerify(); });
+document.getElementById('login_password').addEventListener('keydown', e => { if(e.key === 'Enter') submitLogin(); });
+
+initAuth();
+loadData();
+</script>
+</body>
+</html>
