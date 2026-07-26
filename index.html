@@ -311,8 +311,6 @@
       </div>
     </div>
     <div class="header-actions">
-      <span id="currentUserName" style="color:var(--text-dim); font-size:13px; align-self:center; margin-inline-end:4px;"></span>
-      <button class="btn-ghost btn" id="inviteBtn">👥 دعوة مستخدم</button>
       <button class="btn-ghost btn" id="logoutBtn">تسجيل خروج</button>
       <button class="btn-ghost btn" id="backupBtn">Backup</button>
       <button class="btn-ghost btn" id="restoreBtn">Restore</button>
@@ -452,11 +450,8 @@ const firebaseConfig = {
 };
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
+const SHIPMENTS_DOC = doc(db, 'app', 'shipments');
 const USERS_DOC = doc(db, 'app', 'users');
-
-// دعوة مستخدم جديد: لو الرابط فيه ?invite=WORKSPACE_ID نحفظه لحد ما يخلّص التسجيل
-const urlInvite = new URLSearchParams(window.location.search).get('invite');
-if(urlInvite) localStorage.setItem('str_pending_invite_ws', urlInvite);
 
 const STORAGE_KEY = 'shipment_tracker_data_v1';
 const STAGES = [
@@ -480,28 +475,16 @@ let activeFilter = 'all';
 let editingId = null;
 
 function uid(){ return 'sh_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
-function genWorkspaceId(){ return 'ws_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 
-let shipmentsUnsub = null;
-let currentWorkspaceRef = null;
-
-function loadData(workspaceId){
-  if(shipmentsUnsub){ shipmentsUnsub(); shipmentsUnsub = null; }
-  currentWorkspaceRef = doc(db, 'workspaces', workspaceId);
-  shipmentsUnsub = onSnapshot(currentWorkspaceRef, snap => {
+function loadData(){
+  onSnapshot(SHIPMENTS_DOC, snap => {
     const data = snap.data();
     shipments = (data && data.list) || [];
     render();
   }, err => console.error('shipments sync error', err));
 }
 function saveData(){
-  if(!currentWorkspaceRef) return;
-  setDoc(currentWorkspaceRef, { list: shipments }).catch(e => console.error('storage error', e));
-}
-function stopDataSync(){
-  if(shipmentsUnsub){ shipmentsUnsub(); shipmentsUnsub = null; }
-  currentWorkspaceRef = null;
-  shipments = [];
+  setDoc(SHIPMENTS_DOC, { list: shipments }).catch(e => console.error('storage error', e));
 }
 
 function daysUntil(dateStr){
@@ -1052,28 +1035,6 @@ function showApp(){
   document.getElementById('authOverlay').classList.add('hidden');
   document.getElementById('appRoot').style.display = '';
 }
-let currentUser = null;
-function enterApp(user){
-  currentUser = user;
-  document.getElementById('currentUserName').textContent = user.firstName + ' ' + user.lastName;
-  loadData(user.workspaceId);
-  showApp();
-}
-function inviteUser(){
-  if(!currentUser) return;
-  const link = location.origin + location.pathname + '?invite=' + encodeURIComponent(currentUser.workspaceId);
-  const text = 'مرحبًا، إنت مدعو تدخل على نظام سجل الشحنات وتشارك في تسجيل ومتابعة نفس الشحنات معايا. سجّل من الرابط ده: ' + link;
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(link).then(() => {
-      alert('تم نسخ رابط الدعوة:\n' + link + '\n\nابعته لأي حد عايز يدخل معاك على نفس بيانات الشحنات. أول ما يسجّل حساب من الرابط ده، هيشوف نفس الشحنات بتاعتك ويقدر يعدّل فيها.');
-    }).catch(() => alert('رابط الدعوة:\n' + link));
-  } else {
-    alert('رابط الدعوة:\n' + link);
-  }
-  if(confirm('تحب تفتح واتساب وتبعت رابط الدعوة مباشرة؟')){
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-  }
-}
 function showAuthOverlay(){
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('authOverlay').classList.remove('hidden');
@@ -1182,22 +1143,18 @@ function submitVerify(){
     return;
   }
   const users = getUsers();
-  const inviteWs = localStorage.getItem('str_pending_invite_ws');
-  const newUser = {
+  users.push({
     firstName: pending.firstName,
     lastName: pending.lastName,
     phone: pending.phone,
     email: pending.email,
     password: pending.password,
-    workspaceId: inviteWs || genWorkspaceId(),
     verifiedAt: Date.now()
-  };
-  users.push(newUser);
+  });
   saveUsers(users);
-  if(inviteWs) localStorage.removeItem('str_pending_invite_ws');
   localStorage.removeItem(AUTH_PENDING_KEY);
-  localStorage.setItem(AUTH_SESSION_KEY, newUser.email);
-  enterApp(newUser);
+  localStorage.setItem(AUTH_SESSION_KEY, pending.email);
+  showApp();
 }
 
 function submitLogin(){
@@ -1212,14 +1169,12 @@ function submitLogin(){
   }
   errEl.classList.remove('show');
   localStorage.setItem(AUTH_SESSION_KEY, user.email);
-  enterApp(user);
+  showApp();
 }
 
 function logoutUser(){
   showConfirm('هيتم تسجيل خروجك من الجهاز ده. تأكيد؟').then(ok => {
     if(!ok) return;
-    stopDataSync();
-    currentUser = null;
     localStorage.removeItem(AUTH_SESSION_KEY);
     localStorage.removeItem(AUTH_PENDING_KEY);
     document.getElementById('login_email').value = '';
@@ -1231,10 +1186,7 @@ function logoutUser(){
 function initAuth(){
   if(!usersLoaded) return; // لسه بيجيب بيانات المستخدمين من فايرستور
   const sessionEmail = getSessionEmail();
-  if(sessionEmail){
-    const u = getUsers().find(u => u.email === sessionEmail);
-    if(u){ enterApp(u); return; }
-  }
+  if(sessionEmail && getUsers().some(u => u.email === sessionEmail)){ showApp(); return; }
   const pending = getPendingReg();
   if(pending){ showVerifyStep(pending); showAuthOverlay(); return; }
   showLoginStep();
@@ -1252,8 +1204,8 @@ document.getElementById('goToLoginLink').onclick = showLoginStep;
 document.getElementById('goToRegisterLink').onclick = showRegisterStep;
 document.getElementById('logoutBtn').onclick = logoutUser;
 document.getElementById('verify_code').addEventListener('keydown', e => { if(e.key === 'Enter') submitVerify(); });
-document.getElementById('inviteBtn').onclick = inviteUser;
 
+loadData();
 </script>
 </body>
 </html>
