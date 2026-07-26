@@ -315,7 +315,7 @@
       <span id="wsSwitcherWrap" style="display:none; align-self:center;">
         <select id="wsSwitcher" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:12.5px; cursor:pointer;"></select>
       </span>
-      <button class="btn-ghost btn" id="inviteBtn">👥 دعوة مستخدم</button>
+      <button class="btn-ghost btn" id="inviteBtn">👥 إضافة مستخدم برقم الموبايل</button>
       <button class="btn-ghost btn" id="logoutBtn">تسجيل خروج</button>
       <button class="btn-ghost btn" id="backupBtn">Backup</button>
       <button class="btn-ghost btn" id="restoreBtn">Restore</button>
@@ -335,6 +335,13 @@
   <div class="controls">
     <input class="search" id="searchInput" placeholder="بحث برقم الشحنة، العميل، الـ Consignee، رقم الـ BL، الحاوية، أو الـ UCR...">
     <div class="tabs" id="tabs"></div>
+  </div>
+  <div class="controls" id="advFilters">
+    <select id="filterClient" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
+    <select id="filterPort" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
+    <select id="filterVessel" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
+    <button class="tab" id="filterUcrBtn">عندهم UCR</button>
+    <button class="tab" id="filterAcidBtn">عندهم ACID</button>
   </div>
   <div class="search-hint" style="display:none;"></div>
 
@@ -360,6 +367,7 @@
       <div class="field"><label>حجم الحاوية</label>
         <select id="f_containerSize"><option value="">—</option><option>20GP</option><option>40GP</option><option>40HC</option><option>45HC</option></select>
       </div>
+      <div class="field"><label>عدد الحاويات</label><input type="number" min="1" step="1" id="f_containerCount" placeholder="1"></div>
       <div class="field"><label>نوع الشحن</label>
         <select id="f_freightType"><option value="">—</option><option>FCL</option><option>LCL</option></select>
       </div>
@@ -372,7 +380,7 @@
 
       <div class="section-title">أرقام مرجعية</div>
       <div class="field"><label>رقم الـ UCR</label><input id="f_ucrNumber"></div>
-      <div class="field"><label>رقم الـ ACI</label><input id="f_aciNumber"></div>
+      <div class="field"><label>رقم الـ ACID</label><input id="f_aciNumber"></div>
       <div class="field full"><label>رقم الإقرار الجمركي (Export Declaration No.)</label><input id="f_exportDeclarationNumber"></div>
 
       <div class="section-title">الحالة والمواعيد</div>
@@ -457,14 +465,6 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const USERS_DOC = doc(db, 'app', 'users');
 
-// دعوة مستخدم: لو الرابط فيه ?invite=WORKSPACE_ID نحفظه (سواء لحد ما يخلّص التسجيل، أو عشان نضيفه لحساب مسجل بالفعل)
-const urlInvite = new URLSearchParams(window.location.search).get('invite');
-const urlInviteName = new URLSearchParams(window.location.search).get('iname');
-if(urlInvite){
-  localStorage.setItem('str_pending_invite_ws', urlInvite);
-  if(urlInviteName) localStorage.setItem('str_pending_invite_name', urlInviteName);
-}
-
 const STORAGE_KEY = 'shipment_tracker_data_v1';
 const STAGES = [
   {key:'booking', label:'حجز مؤكد'},
@@ -485,6 +485,11 @@ const PAY_LABELS = {pending:'لم يتم السداد', partial:'مدفوع جز
 let shipments = [];
 let activeFilter = 'all';
 let editingId = null;
+let filterClient = '';
+let filterPort = '';
+let filterVessel = '';
+let filterHasUcr = false;
+let filterHasAcid = false;
 
 function uid(){ return 'sh_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 function genWorkspaceId(){ return 'ws_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
@@ -635,7 +640,7 @@ function cardHTML(s){
   const reqPills = COND_DOC_KEYS.filter(k => s[k+'Required']).map(k =>
     `<span class="req-pill ${s.docs&&s.docs[k]?'done':''}">${DOC_LABELS[k]} ${s.docs&&s.docs[k]?'✓':''}</span>`
   ).join('');
-  const metaBits = [s.containerSize, s.freightType, s.blType, s.commodity].filter(Boolean).join(' · ');
+  const metaBits = [s.containerSize, s.containerCount ? ('عدد: '+s.containerCount) : '', s.freightType, s.blType, s.commodity].filter(Boolean).join(' · ');
   const total = totalCharges(s);
   return `
   <div class="card acc-${cardAccent(s)}">
@@ -685,14 +690,37 @@ function cardHTML(s){
   </div>`;
 }
 
+function fillFilterSelect(sel, values, current, allLabel){
+  sel.innerHTML = '<option value="">' + allLabel + '</option>' +
+    values.map(v => `<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
+}
+function renderAdvFilters(){
+  const clients = [...new Set(shipments.map(s=>s.client).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  const ports = [...new Set(shipments.flatMap(s=>[s.pol,s.pod]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  const vessels = [...new Set(shipments.map(s=>s.carrier).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  fillFilterSelect(document.getElementById('filterClient'), clients, filterClient, 'كل العملاء');
+  fillFilterSelect(document.getElementById('filterPort'), ports, filterPort, 'كل الموانئ');
+  fillFilterSelect(document.getElementById('filterVessel'), vessels, filterVessel, 'كل المراكب');
+  document.getElementById('filterUcrBtn').classList.toggle('active', filterHasUcr);
+  document.getElementById('filterAcidBtn').classList.toggle('active', filterHasAcid);
+}
+
 function render(){
   renderStats();
   renderAlerts();
   renderTabs();
+  renderAdvFilters();
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   let items = shipments.filter(s=>{
     if(activeFilter==='urgent') return isUrgent(s);
     if(activeFilter!=='all') return s.status === activeFilter;
+    return true;
+  }).filter(s => {
+    if(filterClient && s.client !== filterClient) return false;
+    if(filterPort && s.pol !== filterPort && s.pod !== filterPort) return false;
+    if(filterVessel && s.carrier !== filterVessel) return false;
+    if(filterHasUcr && !(s.ucrNumber && s.ucrNumber.trim())) return false;
+    if(filterHasAcid && !(s.aciNumber && s.aciNumber.trim())) return false;
     return true;
   }).filter(s => {
     if(!q) return true;
@@ -760,6 +788,7 @@ function openModal(id){
   document.getElementById('f_pol').value = s.pol || '';
   document.getElementById('f_pod').value = s.pod || '';
   document.getElementById('f_containerSize').value = s.containerSize || '';
+  document.getElementById('f_containerCount').value = s.containerCount || '';
   document.getElementById('f_freightType').value = s.freightType || '';
   document.getElementById('f_blType').value = s.blType || '';
   document.getElementById('f_container').value = s.container || '';
@@ -806,6 +835,7 @@ function saveShipment(){
     pol: document.getElementById('f_pol').value.trim(),
     pod: document.getElementById('f_pod').value.trim(),
     containerSize: document.getElementById('f_containerSize').value,
+    containerCount: Number(document.getElementById('f_containerCount').value) || '',
     freightType: document.getElementById('f_freightType').value,
     blType: document.getElementById('f_blType').value,
     container: document.getElementById('f_container').value.trim(),
@@ -882,9 +912,9 @@ function exportToExcel(){
   const rows = shipments.map(s => ({
     'ID': s.id,
     'المرجع': s.ref, 'العميل': s.client, 'Consignee': s.consignee, 'شركة الشحن': s.shippingLine, 'السفينة': s.carrier,
-    'البضاعة': s.commodity, 'POL': s.pol, 'POD': s.pod, 'حجم الحاوية': s.containerSize, 'نوع الشحن': s.freightType,
+    'البضاعة': s.commodity, 'POL': s.pol, 'POD': s.pod, 'حجم الحاوية': s.containerSize, 'عدد الحاويات': s.containerCount, 'نوع الشحن': s.freightType,
     'BL Type': s.blType, 'رقم الحاوية': s.container, 'رقم BL': s.bl, 'رقم السيل': s.sealNumber,
-    'UCR': s.ucrNumber, 'ACI': s.aciNumber, 'رقم الإقرار الجمركي': s.exportDeclarationNumber,
+    'UCR': s.ucrNumber, 'ACID': s.aciNumber, 'رقم الإقرار الجمركي': s.exportDeclarationNumber,
     'الحالة': (STAGES.find(st=>st.key===s.status)||{label:s.status}).label,
     'معاد التحميل': s.loading, 'ETD': s.etd, 'ETA': s.eta, 'Cut-off': s.cutoff,
     'تبليغ التخليص': s.customsNotified ? 'نعم' : 'لا', 'تبليغ النقل': s.transportNotified ? 'نعم' : 'لا',
@@ -900,13 +930,13 @@ function exportToExcel(){
 
 const EXCEL_HEADER_MAP = {
   'المرجع':'ref', 'العميل':'client', 'Consignee':'consignee', 'شركة الشحن':'shippingLine', 'السفينة':'carrier',
-  'البضاعة':'commodity', 'POL':'pol', 'POD':'pod', 'حجم الحاوية':'containerSize', 'نوع الشحن':'freightType',
+  'البضاعة':'commodity', 'POL':'pol', 'POD':'pod', 'حجم الحاوية':'containerSize', 'عدد الحاويات':'containerCount', 'نوع الشحن':'freightType',
   'BL Type':'blType', 'رقم الحاوية':'container', 'رقم BL':'bl', 'رقم السيل':'sealNumber',
-  'UCR':'ucrNumber', 'ACI':'aciNumber', 'رقم الإقرار الجمركي':'exportDeclarationNumber',
+  'UCR':'ucrNumber', 'ACID':'aciNumber', 'ACI':'aciNumber', 'رقم الإقرار الجمركي':'exportDeclarationNumber',
   'معاد التحميل':'loading', 'ETD':'etd', 'ETA':'eta', 'Cut-off':'cutoff',
   'Ocean Freight':'oceanFreight', 'THC':'thc', 'Documentation Fees':'docFees', 'ملاحظات':'notes'
 };
-const EXCEL_NUMBER_FIELDS = ['oceanFreight','thc','docFees'];
+const EXCEL_NUMBER_FIELDS = ['oceanFreight','thc','docFees','containerCount'];
 
 function importFromExcel(file){
   const reader = new FileReader();
@@ -981,6 +1011,11 @@ document.getElementById('cancelBtn').onclick = closeModal;
 document.getElementById('saveBtn').onclick = saveShipment;
 document.getElementById('overlay').onclick = (e) => { if(e.target.id==='overlay') closeModal(); };
 document.getElementById('searchInput').oninput = render;
+document.getElementById('filterClient').onchange = e => { filterClient = e.target.value; render(); };
+document.getElementById('filterPort').onchange = e => { filterPort = e.target.value; render(); };
+document.getElementById('filterVessel').onchange = e => { filterVessel = e.target.value; render(); };
+document.getElementById('filterUcrBtn').onclick = () => { filterHasUcr = !filterHasUcr; render(); };
+document.getElementById('filterAcidBtn').onclick = () => { filterHasAcid = !filterHasAcid; render(); };
 document.getElementById('exportBtn').onclick = exportToExcel;
 document.getElementById('backupBtn').onclick = backupData;
 document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreInput').click();
@@ -1073,19 +1108,6 @@ function persistUser(user){
   const users = getUsers().map(u => u.email === user.email ? user : u);
   saveUsers(users);
 }
-// لو فيه دعوة معلّقة (رابط ?invite=) وانت أصلاً عندك حساب، بيضيفها كمجموعة جديدة من غير ما يمسح بياناتك الخاصة
-function acceptPendingInviteIfAny(user){
-  const wsId = localStorage.getItem('str_pending_invite_ws');
-  if(!wsId) return null;
-  const wsName = localStorage.getItem('str_pending_invite_name');
-  localStorage.removeItem('str_pending_invite_ws');
-  localStorage.removeItem('str_pending_invite_name');
-  if(wsId === user.workspaceId) return null; // دعوة لنفس بياناته الخاصة، متجاهلها
-  if(user.joinedWorkspaces.some(w => w.id === wsId)) return wsId; // منضم بالفعل، بس نرجّعه عشان نعرضه
-  user.joinedWorkspaces.push({ id: wsId, label: wsName ? ('مجموعة ' + wsName) : 'مجموعة مشتركة' });
-  persistUser(user);
-  return wsId;
-}
 function workspaceLabel(user, wsId){
   if(wsId === user.workspaceId) return 'بياناتي الخاصة';
   const g = user.joinedWorkspaces.find(w => w.id === wsId);
@@ -1110,16 +1132,21 @@ function enterApp(user){
   user = migrated.user;
   if(migrated.changed) persistUser(user);
 
-  const joinedId = acceptPendingInviteIfAny(user);
-
   currentUser = user;
   document.getElementById('currentUserName').textContent = user.firstName + ' ' + user.lastName;
 
+  // نتتبع المجموعات اللي شافها المستخدم قبل كده عشان نلاحظ لو حد ضافه لمجموعة جديدة
+  const seenKey = 'str_seen_ws_' + user.email;
+  let seen = [];
+  try{ seen = JSON.parse(localStorage.getItem(seenKey)) || []; }catch(e){ seen = []; }
+  const newGroup = user.joinedWorkspaces.find(w => !seen.includes(w.id));
+  localStorage.setItem(seenKey, JSON.stringify([user.workspaceId, ...user.joinedWorkspaces.map(w => w.id)]));
+
   const savedActive = localStorage.getItem('str_active_ws_' + user.email);
   const validIds = [user.workspaceId, ...user.joinedWorkspaces.map(w => w.id)];
-  if(joinedId){
-    activeWorkspaceId = joinedId; // أول ما ينضم لمجموعة جديدة، نوريه بياناتها على طول
-    localStorage.setItem('str_active_ws_' + user.email, joinedId);
+  if(newGroup){
+    activeWorkspaceId = newGroup.id; // أول ما ينضم لمجموعة جديدة، نوريه بياناتها على طول
+    localStorage.setItem('str_active_ws_' + user.email, newGroup.id);
   } else if(savedActive && validIds.includes(savedActive)){
     activeWorkspaceId = savedActive;
   } else {
@@ -1130,26 +1157,38 @@ function enterApp(user){
   loadData(activeWorkspaceId);
   showApp();
 
-  if(joinedId){
-    setTimeout(() => alert('تمت إضافتك لـ "' + workspaceLabel(user, joinedId) + '" بنجاح. بياناتك الخاصة لسه محفوظة زي ما هي، وتقدر تتنقل بينهم من القايمة اللي جنب اسمك.'), 300);
+  if(newGroup){
+    setTimeout(() => alert('تمت إضافتك لـ "' + newGroup.label + '" بنجاح. بياناتك الخاصة لسه محفوظة زي ما هي، وتقدر تتنقل بينهم من القايمة اللي جنب اسمك.'), 300);
   }
 }
 document.getElementById('wsSwitcher').addEventListener('change', e => switchWorkspace(e.target.value));
 function inviteUser(){
   if(!currentUser) return;
-  const label = encodeURIComponent(currentUser.firstName + ' ' + currentUser.lastName);
-  const link = location.origin + location.pathname + '?invite=' + encodeURIComponent(currentUser.workspaceId) + '&iname=' + label;
-  const text = 'مرحبًا، إنت مدعو تدخل على نظام سجل الشحنات وتشارك في تسجيل ومتابعة نفس الشحنات معايا. سجّل من الرابط ده: ' + link;
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(link).then(() => {
-      alert('تم نسخ رابط الدعوة:\n' + link + '\n\nابعته لأي حد عايز يدخل معاك على نفس بيانات الشحنات. أول ما يسجّل حساب من الرابط ده، هيشوف نفس الشحنات بتاعتك ويقدر يعدّل فيها.');
-    }).catch(() => alert('رابط الدعوة:\n' + link));
-  } else {
-    alert('رابط الدعوة:\n' + link);
+  const phone = prompt('اكتب رقم الموبايل المسجل بيه الشخص اللي عايز تضيفه على بياناتك (نفس رقم الموبايل اللي سجّل بيه حسابه):');
+  if(phone === null) return;
+  const cleaned = phone.trim();
+  if(!cleaned) return;
+  const target = getUsers().find(u => u.phone === cleaned);
+  if(!target){
+    alert('مفيش حساب مسجل بالرقم ده. المستخدم لازم يسجّل حساب جديد في النظام الأول بنفس رقم الموبايل ده، وبعدها تقدر تضيفه.');
+    return;
   }
-  if(confirm('تحب تفتح واتساب وتبعت رابط الدعوة مباشرة؟')){
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  if(target.email === currentUser.email){
+    alert('ده رقم الموبايل بتاعك انت.');
+    return;
   }
+  const targetJoined = Array.isArray(target.joinedWorkspaces) ? target.joinedWorkspaces : [];
+  if(target.workspaceId === currentUser.workspaceId || targetJoined.some(w => w.id === currentUser.workspaceId)){
+    alert(target.firstName + ' ' + target.lastName + ' عنده وصول لبياناتك بالفعل.');
+    return;
+  }
+  const updatedTarget = {
+    ...target,
+    joinedWorkspaces: [...targetJoined, { id: currentUser.workspaceId, label: 'مجموعة ' + currentUser.firstName + ' ' + currentUser.lastName }]
+  };
+  const users = getUsers().map(u => u.email === target.email ? updatedTarget : u);
+  saveUsers(users);
+  alert('تم بنجاح! ' + target.firstName + ' ' + target.lastName + ' بقى عنده وصول لبياناتك، وهيقدر يضيف ويعدّل فيها. هتظهرله في قايمة المجموعات أول ما يسجّل دخول (أو يعمل تحديث للصفحة لو داخل دلوقتي).');
 }
 function showAuthOverlay(){
   document.getElementById('appRoot').style.display = 'none';
