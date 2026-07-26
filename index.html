@@ -315,7 +315,7 @@
       <span id="wsSwitcherWrap" style="display:none; align-self:center;">
         <select id="wsSwitcher" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:12.5px; cursor:pointer;"></select>
       </span>
-      <button class="btn-ghost btn" id="inviteBtn">👥 إضافة مستخدم برقم الموبايل</button>
+      <button class="btn-ghost btn" id="membersBtn">👥 أعضاء المجموعة</button>
       <button class="btn-ghost btn" id="logoutBtn">تسجيل خروج</button>
       <button class="btn-ghost btn" id="backupBtn">Backup</button>
       <button class="btn-ghost btn" id="restoreBtn">Restore</button>
@@ -362,19 +362,20 @@
       <div class="field"><label>البضاعة (Commodity)</label><input id="f_commodity"></div>
 
       <div class="section-title">تفاصيل الحاوية والشحن</div>
+      <div class="field"><label>Booking No</label><input id="f_bookingNo" placeholder="Booking No"></div>
       <div class="field"><label>ميناء الشحن (POL)</label><input id="f_pol" placeholder="Alexandria"></div>
       <div class="field"><label>ميناء الوصول (POD)</label><input id="f_pod" placeholder="Jebel Ali"></div>
-      <div class="field"><label>حجم الحاوية</label>
-        <select id="f_containerSize"><option value="">—</option><option>20GP</option><option>40GP</option><option>40HC</option><option>45HC</option></select>
+      <div class="field full" id="containersField">
+        <label>الحاويات (الحجم / العدد / الأرقام)</label>
+        <div id="containersList"></div>
+        <button type="button" class="btn btn-ghost" id="addContainerBtn" style="margin-top:4px;">+ إضافة حاوية</button>
       </div>
-      <div class="field"><label>عدد الحاويات</label><input type="number" min="1" step="1" id="f_containerCount" placeholder="1"></div>
       <div class="field"><label>نوع الشحن</label>
         <select id="f_freightType"><option value="">—</option><option>FCL</option><option>LCL</option></select>
       </div>
       <div class="field"><label>نوع البوليصة (BL Type)</label>
         <select id="f_blType"><option value="">—</option><option value="Original">Original</option><option value="SWB">SWB</option><option value="Telex Release">Telex Release</option></select>
       </div>
-      <div class="field"><label>رقم الحاوية</label><input id="f_container"></div>
       <div class="field"><label>رقم البوليصة (BL)</label><input id="f_bl"></div>
       <div class="field"><label>رقم السيل (Seal Number)</label><input id="f_sealNumber"></div>
 
@@ -445,6 +446,21 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" id="confirmNo">إلغاء</button>
       <button class="btn btn-primary" id="confirmYes" style="background:var(--coral);">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="membersOverlay">
+  <div class="modal" style="max-width:480px;">
+    <h2 style="font-size:18px;">أعضاء المجموعة</h2>
+    <p style="font-size:12.5px; color:var(--text-dim); margin-top:-8px;">المجموعة الحالية اللي شغّال عليها دلوقتي.</p>
+    <div id="membersInviteRow" style="display:none; gap:8px; margin:10px 0 16px;">
+      <input id="memberPhoneInput" placeholder="رقم موبايل المستخدم المراد إضافته" style="flex:1; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px; color:var(--text); font-family:inherit; font-size:13.5px;">
+      <button class="btn btn-primary" id="memberInviteBtn">إضافة</button>
+    </div>
+    <div id="membersList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="membersCloseBtn">إغلاق</button>
     </div>
   </div>
 </div>
@@ -640,16 +656,20 @@ function cardHTML(s){
   const reqPills = COND_DOC_KEYS.filter(k => s[k+'Required']).map(k =>
     `<span class="req-pill ${s.docs&&s.docs[k]?'done':''}">${DOC_LABELS[k]} ${s.docs&&s.docs[k]?'✓':''}</span>`
   ).join('');
-  const metaBits = [s.containerSize, s.containerCount ? ('عدد: '+s.containerCount) : '', s.freightType, s.blType, s.commodity].filter(Boolean).join(' · ');
+  const containerBits = (Array.isArray(s.containers) && s.containers.length)
+    ? s.containers.map(c => [c.size, c.count ? ('×'+c.count) : ''].filter(Boolean).join('')).filter(Boolean).join('، ')
+    : (s.containerSize || (s.containerCount ? ('عدد: '+s.containerCount) : ''));
+  const metaBits = [containerBits, s.freightType, s.blType, s.commodity].filter(Boolean).join(' · ');
   const total = totalCharges(s);
   return `
   <div class="card acc-${cardAccent(s)}">
     <div class="card-top">
       <div>
-        <div class="ref mono">${s.ref || 'بدون رقم'}</div>
+        <div class="ref mono">${s.ref || 'بدون رقم'}${s.bookingNo ? ' · Booking: ' + s.bookingNo : ''}</div>
         <div class="client">${s.client || 'بدون اسم عميل'}</div>
         <div class="route">${s.pol||'—'} <span class="mono">→</span> ${s.pod||'—'} ${s.shippingLine?'· '+s.shippingLine:''}</div>
         ${metaBits ? `<div class="meta-line">${metaBits}</div>` : ''}
+        ${s.container ? `<div class="meta-line mono" style="opacity:.85;">${s.container}</div>` : ''}
       </div>
       <div class="badges">
         ${urgent?'<span class="badge urgent-flag">عاجل</span>':''}
@@ -724,7 +744,7 @@ function render(){
     return true;
   }).filter(s => {
     if(!q) return true;
-    const fields = [s.ref, s.client, s.consignee, s.bl, s.container, s.ucrNumber];
+    const fields = [s.ref, s.bookingNo, s.client, s.consignee, s.bl, s.container, s.ucrNumber];
     return fields.some(f => (f||'').toLowerCase().includes(q));
   });
   items.sort((a,b)=>{
@@ -775,11 +795,61 @@ function recalcTotal(){
   document.getElementById('f_total').value = fmtMoney(total);
 }
 
+/* ---- containers (dynamic multi-container list) ---- */
+let currentContainers = [];
+function normalizeContainers(s){
+  if(Array.isArray(s.containers) && s.containers.length){
+    return s.containers.map(c => ({
+      size: c.size || '',
+      count: c.count || '',
+      numbers: Array.isArray(c.numbers) ? c.numbers.join(', ') : (c.numbers || '')
+    }));
+  }
+  if(s.containerSize || s.containerCount || s.container){
+    return [{ size: s.containerSize || '', count: s.containerCount || '', numbers: s.container || '' }];
+  }
+  return [{ size:'', count:'', numbers:'' }];
+}
+function containerRowHTML(row, idx){
+  const opts = ['20GP','40GP','40HC','45HC'];
+  return `
+  <div class="container-row" data-idx="${idx}" style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+    <select class="cr-size" style="flex:1; min-width:90px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px; color:var(--text); font-family:inherit; font-size:13px;">
+      <option value="">حجم —</option>
+      ${opts.map(o => `<option ${row.size===o?'selected':''}>${o}</option>`).join('')}
+    </select>
+    <input type="number" min="1" step="1" class="cr-count" placeholder="العدد" value="${row.count||''}" style="width:74px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px; color:var(--text); font-family:inherit; font-size:13px;">
+    <input class="cr-numbers" placeholder="أرقام الحاويات (افصل بفاصلة ,)" value="${(row.numbers||'').toString().replace(/"/g,'&quot;')}" style="flex:2; min-width:170px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px; color:var(--text); font-family:inherit; font-size:13px;">
+    <button type="button" class="icon-btn cr-remove" title="حذف الحاوية دي">✕</button>
+  </div>`;
+}
+function renderContainersList(){
+  document.getElementById('containersList').innerHTML = currentContainers.map((row,idx) => containerRowHTML(row, idx)).join('');
+  document.querySelectorAll('#containersList .container-row').forEach(rowEl => {
+    const idx = Number(rowEl.dataset.idx);
+    rowEl.querySelector('.cr-size').onchange = e => { currentContainers[idx].size = e.target.value; };
+    rowEl.querySelector('.cr-count').oninput = e => { currentContainers[idx].count = e.target.value; };
+    rowEl.querySelector('.cr-numbers').oninput = e => { currentContainers[idx].numbers = e.target.value; };
+    rowEl.querySelector('.cr-remove').onclick = () => {
+      currentContainers.splice(idx,1);
+      if(currentContainers.length === 0) currentContainers.push({size:'',count:'',numbers:''});
+      renderContainersList();
+    };
+  });
+}
+document.getElementById('addContainerBtn').onclick = () => {
+  currentContainers.push({size:'',count:'',numbers:''});
+  renderContainersList();
+};
+
 function openModal(id){
   editingId = id || null;
   const s = id ? shipments.find(x=>x.id===id) : {};
   document.getElementById('modalTitle').textContent = id ? 'تعديل الشحنة' : 'شحنة جديدة';
+  currentContainers = normalizeContainers(s);
+  renderContainersList();
   document.getElementById('f_ref').value = s.ref || '';
+  document.getElementById('f_bookingNo').value = s.bookingNo || '';
   document.getElementById('f_client').value = s.client || '';
   document.getElementById('f_consignee').value = s.consignee || '';
   document.getElementById('f_shippingLine').value = s.shippingLine || '';
@@ -787,11 +857,8 @@ function openModal(id){
   document.getElementById('f_commodity').value = s.commodity || '';
   document.getElementById('f_pol').value = s.pol || '';
   document.getElementById('f_pod').value = s.pod || '';
-  document.getElementById('f_containerSize').value = s.containerSize || '';
-  document.getElementById('f_containerCount').value = s.containerCount || '';
   document.getElementById('f_freightType').value = s.freightType || '';
   document.getElementById('f_blType').value = s.blType || '';
-  document.getElementById('f_container').value = s.container || '';
   document.getElementById('f_bl').value = s.bl || '';
   document.getElementById('f_sealNumber').value = s.sealNumber || '';
   document.getElementById('f_ucrNumber').value = s.ucrNumber || '';
@@ -824,9 +891,21 @@ function saveShipment(){
   const docs = {};
   ALWAYS_DOC_KEYS.forEach(k => docs[k] = document.getElementById('d_'+k).checked);
   COND_DOC_KEYS.forEach(k => docs[k] = document.getElementById('d_'+k).checked);
+  const containersClean = currentContainers
+    .map(r => ({
+      size: r.size || '',
+      count: Number(r.count) || '',
+      numbers: (r.numbers || '').split(/[,\n]/).map(x => x.trim()).filter(Boolean)
+    }))
+    .filter(r => r.size || r.count || r.numbers.length);
   const data = {
     id: editingId || uid(),
+    containers: containersClean,
+    containerSize: [...new Set(containersClean.map(c => c.size).filter(Boolean))].join(' / '),
+    containerCount: containersClean.reduce((sum, c) => sum + (Number(c.count) || 0), 0) || '',
+    container: containersClean.flatMap(c => c.numbers).join(', '),
     ref: document.getElementById('f_ref').value.trim(),
+    bookingNo: document.getElementById('f_bookingNo').value.trim(),
     client: document.getElementById('f_client').value.trim(),
     consignee: document.getElementById('f_consignee').value.trim(),
     shippingLine: document.getElementById('f_shippingLine').value.trim(),
@@ -834,11 +913,8 @@ function saveShipment(){
     commodity: document.getElementById('f_commodity').value.trim(),
     pol: document.getElementById('f_pol').value.trim(),
     pod: document.getElementById('f_pod').value.trim(),
-    containerSize: document.getElementById('f_containerSize').value,
-    containerCount: Number(document.getElementById('f_containerCount').value) || '',
     freightType: document.getElementById('f_freightType').value,
     blType: document.getElementById('f_blType').value,
-    container: document.getElementById('f_container').value.trim(),
     bl: document.getElementById('f_bl').value.trim(),
     sealNumber: document.getElementById('f_sealNumber').value.trim(),
     ucrNumber: document.getElementById('f_ucrNumber').value.trim(),
@@ -911,9 +987,14 @@ function exportToExcel(){
   if(shipments.length === 0){ alert('مفيش شحنات لتصديرها.'); return; }
   const rows = shipments.map(s => ({
     'ID': s.id,
-    'المرجع': s.ref, 'العميل': s.client, 'Consignee': s.consignee, 'شركة الشحن': s.shippingLine, 'السفينة': s.carrier,
+    'المرجع': s.ref, 'Booking No': s.bookingNo, 'العميل': s.client, 'Consignee': s.consignee, 'شركة الشحن': s.shippingLine, 'السفينة': s.carrier,
     'البضاعة': s.commodity, 'POL': s.pol, 'POD': s.pod, 'حجم الحاوية': s.containerSize, 'عدد الحاويات': s.containerCount, 'نوع الشحن': s.freightType,
-    'BL Type': s.blType, 'رقم الحاوية': s.container, 'رقم BL': s.bl, 'رقم السيل': s.sealNumber,
+    'BL Type': s.blType, 'رقم الحاوية': s.container, 'تفاصيل الحاويات': (s.containers||[]).map(c => {
+      let str = c.size || '';
+      if(c.count) str += '×' + c.count;
+      if(c.numbers && c.numbers.length) str += ' (' + c.numbers.join(', ') + ')';
+      return str.trim();
+    }).filter(Boolean).join(' | '), 'رقم BL': s.bl, 'رقم السيل': s.sealNumber,
     'UCR': s.ucrNumber, 'ACID': s.aciNumber, 'رقم الإقرار الجمركي': s.exportDeclarationNumber,
     'الحالة': (STAGES.find(st=>st.key===s.status)||{label:s.status}).label,
     'معاد التحميل': s.loading, 'ETD': s.etd, 'ETA': s.eta, 'Cut-off': s.cutoff,
@@ -929,7 +1010,7 @@ function exportToExcel(){
 }
 
 const EXCEL_HEADER_MAP = {
-  'المرجع':'ref', 'العميل':'client', 'Consignee':'consignee', 'شركة الشحن':'shippingLine', 'السفينة':'carrier',
+  'المرجع':'ref', 'Booking No':'bookingNo', 'العميل':'client', 'Consignee':'consignee', 'شركة الشحن':'shippingLine', 'السفينة':'carrier',
   'البضاعة':'commodity', 'POL':'pol', 'POD':'pod', 'حجم الحاوية':'containerSize', 'عدد الحاويات':'containerCount', 'نوع الشحن':'freightType',
   'BL Type':'blType', 'رقم الحاوية':'container', 'رقم BL':'bl', 'رقم السيل':'sealNumber',
   'UCR':'ucrNumber', 'ACID':'aciNumber', 'ACI':'aciNumber', 'رقم الإقرار الجمركي':'exportDeclarationNumber',
@@ -937,6 +1018,16 @@ const EXCEL_HEADER_MAP = {
   'Ocean Freight':'oceanFreight', 'THC':'thc', 'Documentation Fees':'docFees', 'ملاحظات':'notes'
 };
 const EXCEL_NUMBER_FIELDS = ['oceanFreight','thc','docFees','containerCount'];
+
+function parseContainersDetail(str){
+  return str.split('|').map(part => part.trim()).filter(Boolean).map(part => {
+    const m = part.match(/^(.*?)(?:×(\d+))?\s*(?:\(([^)]*)\))?$/);
+    const size = (m && m[1]) ? m[1].trim() : '';
+    const count = (m && m[2]) ? Number(m[2]) : '';
+    const numbers = (m && m[3]) ? m[3].split(',').map(x=>x.trim()).filter(Boolean) : [];
+    return { size, count, numbers };
+  });
+}
 
 function importFromExcel(file){
   const reader = new FileReader();
@@ -963,6 +1054,7 @@ function importFromExcel(file){
             s[field] = val;
           }
         });
+        if(row['تفاصيل الحاويات']){ s.containers = parseContainersDetail(String(row['تفاصيل الحاويات'])); }
         if(row['الحالة']){ s.status = statusByLabel[row['الحالة']] || s.status; }
         if(row['حالة السداد']){ s.paymentStatus = payByLabel[row['حالة السداد']] || s.paymentStatus; }
         if('تبليغ التخليص' in row){ s.customsNotified = row['تبليغ التخليص'] === 'نعم'; }
@@ -1102,6 +1194,7 @@ function ensureUserShape(user){
   let changed = false;
   if(!user.workspaceId){ user.workspaceId = genWorkspaceId(); changed = true; }
   if(!Array.isArray(user.joinedWorkspaces)){ user.joinedWorkspaces = []; changed = true; }
+  if(!Array.isArray(user.workspaceMembers)){ user.workspaceMembers = []; changed = true; }
   return { user, changed };
 }
 function persistUser(user){
@@ -1162,33 +1255,140 @@ function enterApp(user){
   }
 }
 document.getElementById('wsSwitcher').addEventListener('change', e => switchWorkspace(e.target.value));
-function inviteUser(){
+/* ---- أعضاء المجموعة والصلاحيات (أدمن) ---- */
+function getWorkspaceOwner(wsId, usersList){
+  if(!currentUser) return null;
+  if(wsId === currentUser.workspaceId) return currentUser;
+  const users = usersList || getUsers();
+  return users.find(u => u.workspaceId === wsId) || null;
+}
+function getMyRoleFor(wsId){
+  if(!currentUser) return null;
+  if(wsId === currentUser.workspaceId) return 'owner';
+  const owner = getWorkspaceOwner(wsId);
+  if(!owner) return null;
+  const m = (owner.workspaceMembers || []).find(x => x.email === currentUser.email);
+  return m ? (m.role || 'member') : null;
+}
+function canManageMembers(wsId){
+  const role = getMyRoleFor(wsId);
+  return role === 'owner' || role === 'admin';
+}
+function inviteUserToWorkspace(){
   if(!currentUser) return;
-  const phone = prompt('اكتب رقم الموبايل المسجل بيه الشخص اللي عايز تضيفه على بياناتك (نفس رقم الموبايل اللي سجّل بيه حسابه):');
-  if(phone === null) return;
-  const cleaned = phone.trim();
+  const wsId = activeWorkspaceId;
+  if(!canManageMembers(wsId)){ alert('لازم تكون صاحب المجموعة أو أدمن عشان تضيف أعضاء.'); return; }
+  const phoneInput = document.getElementById('memberPhoneInput');
+  const cleaned = phoneInput.value.trim();
   if(!cleaned) return;
-  const target = getUsers().find(u => u.phone === cleaned);
+  const users = getUsers();
+  const target = users.find(u => u.phone === cleaned);
   if(!target){
     alert('مفيش حساب مسجل بالرقم ده. المستخدم لازم يسجّل حساب جديد في النظام الأول بنفس رقم الموبايل ده، وبعدها تقدر تضيفه.');
     return;
   }
-  if(target.email === currentUser.email){
-    alert('ده رقم الموبايل بتاعك انت.');
-    return;
-  }
+  const owner = getWorkspaceOwner(wsId, users);
+  if(!owner) return;
+  if(target.email === owner.email){ alert('ده رقم موبايل صاحب المجموعة نفسه.'); return; }
+  const alreadyMember = (owner.workspaceMembers || []).some(m => m.email === target.email);
+  if(alreadyMember){ alert(target.firstName + ' ' + target.lastName + ' عنده وصول للمجموعة دي بالفعل.'); return; }
   const targetJoined = Array.isArray(target.joinedWorkspaces) ? target.joinedWorkspaces : [];
-  if(target.workspaceId === currentUser.workspaceId || targetJoined.some(w => w.id === currentUser.workspaceId)){
-    alert(target.firstName + ' ' + target.lastName + ' عنده وصول لبياناتك بالفعل.');
-    return;
-  }
   const updatedTarget = {
     ...target,
-    joinedWorkspaces: [...targetJoined, { id: currentUser.workspaceId, label: 'مجموعة ' + currentUser.firstName + ' ' + currentUser.lastName }]
+    joinedWorkspaces: [...targetJoined, { id: wsId, label: 'مجموعة ' + owner.firstName + ' ' + owner.lastName }]
   };
-  const users = getUsers().map(u => u.email === target.email ? updatedTarget : u);
-  saveUsers(users);
-  alert('تم بنجاح! ' + target.firstName + ' ' + target.lastName + ' بقى عنده وصول لبياناتك، وهيقدر يضيف ويعدّل فيها. هتظهرله في قايمة المجموعات أول ما يسجّل دخول (أو يعمل تحديث للصفحة لو داخل دلوقتي).');
+  const updatedOwner = {
+    ...owner,
+    workspaceMembers: [...(owner.workspaceMembers || []), { email: target.email, firstName: target.firstName, lastName: target.lastName, phone: target.phone, role: 'member' }]
+  };
+  const newUsers = users.map(u => {
+    if(u.email === target.email) return updatedTarget;
+    if(u.email === owner.email) return updatedOwner;
+    return u;
+  });
+  saveUsers(newUsers);
+  if(currentUser.email === owner.email) currentUser = updatedOwner;
+  phoneInput.value = '';
+  alert('تم بنجاح! ' + target.firstName + ' ' + target.lastName + ' بقى عنده وصول للمجموعة، وهيقدر يضيف ويعدّل فيها. هتظهرله في قايمة المجموعات أول ما يسجّل دخول (أو يعمل تحديث للصفحة لو داخل دلوقتي).');
+  renderMembersList();
+}
+function toggleAdminRole(email){
+  const wsId = activeWorkspaceId;
+  if(!canManageMembers(wsId)) return;
+  const users = getUsers();
+  const owner = getWorkspaceOwner(wsId, users);
+  if(!owner) return;
+  const members = (owner.workspaceMembers || []).map(m => m.email === email ? { ...m, role: m.role === 'admin' ? 'member' : 'admin' } : m);
+  const updatedOwner = { ...owner, workspaceMembers: members };
+  const newUsers = users.map(u => u.email === owner.email ? updatedOwner : u);
+  saveUsers(newUsers);
+  if(currentUser.email === owner.email) currentUser = updatedOwner;
+  renderMembersList();
+}
+function removeMemberFromWorkspace(email){
+  const wsId = activeWorkspaceId;
+  if(!canManageMembers(wsId)) return;
+  showConfirm('تحذف هذا العضو من المجموعة؟ هيفقد الوصول لبياناتها فورًا.').then(ok => {
+    if(!ok) return;
+    const users = getUsers();
+    const owner = getWorkspaceOwner(wsId, users);
+    if(!owner) return;
+    const updatedOwner = { ...owner, workspaceMembers: (owner.workspaceMembers || []).filter(m => m.email !== email) };
+    const newUsers = users.map(u => {
+      if(u.email === owner.email) return updatedOwner;
+      if(u.email === email) return { ...u, joinedWorkspaces: (u.joinedWorkspaces || []).filter(w => w.id !== wsId) };
+      return u;
+    });
+    saveUsers(newUsers);
+    if(currentUser.email === owner.email) currentUser = updatedOwner;
+    if(currentUser.email === email){
+      closeMembersModal();
+      switchWorkspace(currentUser.workspaceId);
+      return;
+    }
+    renderMembersList();
+  });
+}
+function renderMembersList(){
+  const wsId = activeWorkspaceId;
+  const owner = getWorkspaceOwner(wsId);
+  const listEl = document.getElementById('membersList');
+  const inviteRow = document.getElementById('membersInviteRow');
+  if(!owner){ listEl.innerHTML = ''; inviteRow.style.display = 'none'; return; }
+  const manage = canManageMembers(wsId);
+  inviteRow.style.display = manage ? 'flex' : 'none';
+  const members = Array.isArray(owner.workspaceMembers) ? owner.workspaceMembers : [];
+  const rows = [{ email: owner.email, firstName: owner.firstName, lastName: owner.lastName, phone: owner.phone, role: 'owner' }, ...members];
+  listEl.innerHTML = rows.map(m => {
+    const roleLabel = m.role === 'owner' ? 'المالك' : (m.role === 'admin' ? 'أدمن' : 'عضو');
+    const badgeClass = m.role === 'owner' ? 'st-delivered' : (m.role === 'admin' ? 'st-loading' : 'st-booking');
+    const isMe = currentUser && m.email === currentUser.email;
+    let actions = '';
+    if(manage && m.role !== 'owner'){
+      actions += `<button class="btn-ghost btn" data-promote="${m.email}" style="font-size:11px; padding:5px 8px;">${m.role === 'admin' ? 'إلغاء الأدمن' : 'تعيين أدمن'}</button>`;
+      actions += `<button class="btn-ghost btn danger" data-removemember="${m.email}" style="font-size:11px; padding:5px 8px;">حذف</button>`;
+    }
+    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap;">
+      <div>
+        <div style="font-weight:600; font-size:14px;">${m.firstName || ''} ${m.lastName || ''} ${isMe ? '(أنت)' : ''}</div>
+        <div class="mono" style="font-size:11.5px; color:var(--text-dim);">${m.phone || ''}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span class="badge ${badgeClass}">${roleLabel}</span>
+        ${actions}
+      </div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('#membersList [data-promote]').forEach(b => b.onclick = () => toggleAdminRole(b.dataset.promote));
+  document.querySelectorAll('#membersList [data-removemember]').forEach(b => b.onclick = () => removeMemberFromWorkspace(b.dataset.removemember));
+}
+function openMembersModal(){
+  if(!currentUser) return;
+  renderMembersList();
+  document.getElementById('membersOverlay').classList.add('open');
+}
+function closeMembersModal(){
+  document.getElementById('membersOverlay').classList.remove('open');
 }
 function showAuthOverlay(){
   document.getElementById('appRoot').style.display = 'none';
@@ -1368,7 +1568,11 @@ document.getElementById('goToLoginLink').onclick = showLoginStep;
 document.getElementById('goToRegisterLink').onclick = showRegisterStep;
 document.getElementById('logoutBtn').onclick = logoutUser;
 document.getElementById('verify_code').addEventListener('keydown', e => { if(e.key === 'Enter') submitVerify(); });
-document.getElementById('inviteBtn').onclick = inviteUser;
+document.getElementById('membersBtn').onclick = openMembersModal;
+document.getElementById('memberInviteBtn').onclick = inviteUserToWorkspace;
+document.getElementById('membersCloseBtn').onclick = closeMembersModal;
+document.getElementById('membersOverlay').onclick = (e) => { if(e.target.id==='membersOverlay') closeMembersModal(); };
+document.getElementById('memberPhoneInput').addEventListener('keydown', e => { if(e.key === 'Enter') inviteUserToWorkspace(); });
 
 </script>
 </body>
