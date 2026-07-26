@@ -240,7 +240,7 @@
     </div>
 
     <!-- Step 1: Register -->
-    <div id="authStepRegister">
+    <div id="authStepRegister" style="display:none;">
       <p class="sub">مفيش حساب مسجل على هذا المتصفح. سجّل بياناتك الأول عشان يتم تفعيل حسابك (مرة واحدة بس).</p>
       <div class="auth-error" id="registerError"></div>
       <form id="registerForm" autocomplete="on">
@@ -282,7 +282,7 @@
     </div>
 
     <!-- Step 3: Login (returning user on this device) -->
-    <div id="authStepLogin" style="display:none;">
+    <div id="authStepLogin">
       <p class="sub">سجّل دخولك بالإيميل وكلمة السر. لو مفيش عندك حساب لسه، سجّل واحد جديد من تحت.</p>
       <div class="auth-error" id="loginError"></div>
       <form id="loginForm" autocomplete="on">
@@ -312,6 +312,9 @@
     </div>
     <div class="header-actions">
       <span id="currentUserName" style="color:var(--text-dim); font-size:13px; align-self:center; margin-inline-end:4px;"></span>
+      <span id="wsSwitcherWrap" style="display:none; align-self:center;">
+        <select id="wsSwitcher" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:12.5px; cursor:pointer;"></select>
+      </span>
       <button class="btn-ghost btn" id="inviteBtn">👥 دعوة مستخدم</button>
       <button class="btn-ghost btn" id="logoutBtn">تسجيل خروج</button>
       <button class="btn-ghost btn" id="backupBtn">Backup</button>
@@ -454,9 +457,13 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const USERS_DOC = doc(db, 'app', 'users');
 
-// دعوة مستخدم جديد: لو الرابط فيه ?invite=WORKSPACE_ID نحفظه لحد ما يخلّص التسجيل
+// دعوة مستخدم: لو الرابط فيه ?invite=WORKSPACE_ID نحفظه (سواء لحد ما يخلّص التسجيل، أو عشان نضيفه لحساب مسجل بالفعل)
 const urlInvite = new URLSearchParams(window.location.search).get('invite');
-if(urlInvite) localStorage.setItem('str_pending_invite_ws', urlInvite);
+const urlInviteName = new URLSearchParams(window.location.search).get('iname');
+if(urlInvite){
+  localStorage.setItem('str_pending_invite_ws', urlInvite);
+  if(urlInviteName) localStorage.setItem('str_pending_invite_name', urlInviteName);
+}
 
 const STORAGE_KEY = 'shipment_tracker_data_v1';
 const STAGES = [
@@ -1053,15 +1060,85 @@ function showApp(){
   document.getElementById('appRoot').style.display = '';
 }
 let currentUser = null;
+let activeWorkspaceId = null;
+
+// يضمن إن كل مستخدم عنده بيانات خاصة بيه (workspaceId) وقايمة مجموعات انضم لها (joinedWorkspaces)
+function ensureUserShape(user){
+  let changed = false;
+  if(!user.workspaceId){ user.workspaceId = genWorkspaceId(); changed = true; }
+  if(!Array.isArray(user.joinedWorkspaces)){ user.joinedWorkspaces = []; changed = true; }
+  return { user, changed };
+}
+function persistUser(user){
+  const users = getUsers().map(u => u.email === user.email ? user : u);
+  saveUsers(users);
+}
+// لو فيه دعوة معلّقة (رابط ?invite=) وانت أصلاً عندك حساب، بيضيفها كمجموعة جديدة من غير ما يمسح بياناتك الخاصة
+function acceptPendingInviteIfAny(user){
+  const wsId = localStorage.getItem('str_pending_invite_ws');
+  if(!wsId) return null;
+  const wsName = localStorage.getItem('str_pending_invite_name');
+  localStorage.removeItem('str_pending_invite_ws');
+  localStorage.removeItem('str_pending_invite_name');
+  if(wsId === user.workspaceId) return null; // دعوة لنفس بياناته الخاصة، متجاهلها
+  if(user.joinedWorkspaces.some(w => w.id === wsId)) return wsId; // منضم بالفعل، بس نرجّعه عشان نعرضه
+  user.joinedWorkspaces.push({ id: wsId, label: wsName ? ('مجموعة ' + wsName) : 'مجموعة مشتركة' });
+  persistUser(user);
+  return wsId;
+}
+function workspaceLabel(user, wsId){
+  if(wsId === user.workspaceId) return 'بياناتي الخاصة';
+  const g = user.joinedWorkspaces.find(w => w.id === wsId);
+  return g ? g.label : 'مجموعة مشتركة';
+}
+function renderWorkspaceSwitcher(user){
+  const wrap = document.getElementById('wsSwitcherWrap');
+  const select = document.getElementById('wsSwitcher');
+  const allWs = [{ id: user.workspaceId, label: 'بياناتي الخاصة' }, ...user.joinedWorkspaces];
+  if(allWs.length <= 1){ wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  select.innerHTML = allWs.map(w => '<option value="' + w.id + '"' + (w.id === activeWorkspaceId ? ' selected' : '') + '>' + w.label + '</option>').join('');
+}
+function switchWorkspace(wsId){
+  if(!currentUser || wsId === activeWorkspaceId) return;
+  activeWorkspaceId = wsId;
+  localStorage.setItem('str_active_ws_' + currentUser.email, wsId);
+  loadData(wsId);
+}
 function enterApp(user){
+  const migrated = ensureUserShape(user);
+  user = migrated.user;
+  if(migrated.changed) persistUser(user);
+
+  const joinedId = acceptPendingInviteIfAny(user);
+
   currentUser = user;
   document.getElementById('currentUserName').textContent = user.firstName + ' ' + user.lastName;
-  loadData(user.workspaceId);
+
+  const savedActive = localStorage.getItem('str_active_ws_' + user.email);
+  const validIds = [user.workspaceId, ...user.joinedWorkspaces.map(w => w.id)];
+  if(joinedId){
+    activeWorkspaceId = joinedId; // أول ما ينضم لمجموعة جديدة، نوريه بياناتها على طول
+    localStorage.setItem('str_active_ws_' + user.email, joinedId);
+  } else if(savedActive && validIds.includes(savedActive)){
+    activeWorkspaceId = savedActive;
+  } else {
+    activeWorkspaceId = user.workspaceId;
+  }
+
+  renderWorkspaceSwitcher(user);
+  loadData(activeWorkspaceId);
   showApp();
+
+  if(joinedId){
+    setTimeout(() => alert('تمت إضافتك لـ "' + workspaceLabel(user, joinedId) + '" بنجاح. بياناتك الخاصة لسه محفوظة زي ما هي، وتقدر تتنقل بينهم من القايمة اللي جنب اسمك.'), 300);
+  }
 }
+document.getElementById('wsSwitcher').addEventListener('change', e => switchWorkspace(e.target.value));
 function inviteUser(){
   if(!currentUser) return;
-  const link = location.origin + location.pathname + '?invite=' + encodeURIComponent(currentUser.workspaceId);
+  const label = encodeURIComponent(currentUser.firstName + ' ' + currentUser.lastName);
+  const link = location.origin + location.pathname + '?invite=' + encodeURIComponent(currentUser.workspaceId) + '&iname=' + label;
   const text = 'مرحبًا، إنت مدعو تدخل على نظام سجل الشحنات وتشارك في تسجيل ومتابعة نفس الشحنات معايا. سجّل من الرابط ده: ' + link;
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(link).then(() => {
@@ -1182,19 +1259,19 @@ function submitVerify(){
     return;
   }
   const users = getUsers();
-  const inviteWs = localStorage.getItem('str_pending_invite_ws');
   const newUser = {
     firstName: pending.firstName,
     lastName: pending.lastName,
     phone: pending.phone,
     email: pending.email,
     password: pending.password,
-    workspaceId: inviteWs || genWorkspaceId(),
+    workspaceId: genWorkspaceId(), // بياناته الخاصة دايمًا، حتى لو جاي من رابط دعوة
+    joinedWorkspaces: [],
     verifiedAt: Date.now()
   };
   users.push(newUser);
   saveUsers(users);
-  if(inviteWs) localStorage.removeItem('str_pending_invite_ws');
+  // لو جاي من رابط دعوة (?invite=...)، enterApp هيضيفها كمجموعة منفصلة تلقائيًا من غير ما يمسح بياناته الخاصة
   localStorage.removeItem(AUTH_PENDING_KEY);
   localStorage.setItem(AUTH_SESSION_KEY, newUser.email);
   enterApp(newUser);
