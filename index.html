@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>سجل الشحنات</title>
+<title>سجل الشحنات | Shipment Tracker</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="سجل الشحنات">
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230B1F30'/%3E%3Crect x='14' y='50' width='30' height='30' rx='4' fill='%233E5A72'/%3E%3Crect x='46' y='50' width='30' height='30' rx='4' fill='%23F2A93B'/%3E%3Crect x='30' y='18' width='30' height='30' rx='4' fill='%231B3B55' stroke='%2349CFC0' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230B1F30'/%3E%3Crect x='14' y='50' width='30' height='30' rx='4' fill='%233E5A72'/%3E%3Crect x='46' y='50' width='30' height='30' rx='4' fill='%23F2A93B'/%3E%3Crect x='30' y='18' width='30' height='30' rx='4' fill='%231B3B55' stroke='%2349CFC0' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -37,12 +37,18 @@
   body{
     background: var(--ink);
     color: var(--text);
-    font-family:'IBM Plex Sans Arabic', sans-serif;
+    font-family:'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif;
     min-height:100vh;
     padding: 28px 20px 80px;
   }
+  html[dir="ltr"] body {
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
   .mono{ font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi: isolate; }
   .wrap{ max-width: 1080px; margin: 0 auto; }
+
+  /* Top Bar for Language Toggle */
+  .top-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
 
   header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: 18px; flex-wrap:wrap; }
   .brand{ display:flex; align-items:center; gap:12px; }
@@ -57,6 +63,7 @@
   .btn-ghost{ background: transparent; color: var(--text-dim); border:1px solid var(--line); font-weight:500; font-size:12.5px; padding:9px 12px; }
   .btn-ghost:hover{ color: var(--teal); border-color: var(--teal); }
   .btn-ghost.danger:hover{ color: var(--coral); border-color: var(--coral); }
+  .btn-lang{ background: var(--panel-2); color: var(--amber); border: 1px solid var(--amber); font-weight:700; }
 
   /* ---- alerts ---- */
   .alerts{ display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
@@ -91,18 +98,18 @@
 
   /* ---- cards ---- */
   .list{ display:flex; flex-direction:column; gap:12px; }
-  .card{ background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; border-right:4px solid var(--slate); }
-  .card.acc-red{ border-right-color: var(--coral); }
-  .card.acc-yellow{ border-right-color: var(--amber); }
-  .card.acc-green{ border-right-color: var(--teal); }
-  .card.acc-blue{ border-right-color: var(--blue); }
-  .card.acc-grey{ border-right-color: var(--slate); opacity:.7; }
+  .card{ background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px; border-inline-start:4px solid var(--slate); }
+  .card.acc-red{ border-inline-start-color: var(--coral); }
+  .card.acc-yellow{ border-inline-start-color: var(--amber); }
+  .card.acc-green{ border-inline-start-color: var(--teal); }
+  .card.acc-blue{ border-inline-start-color: var(--blue); }
+  .card.acc-grey{ border-inline-start-color: var(--slate); opacity:.7; }
   .card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; }
   .ref{ font-size:12.5px; color: var(--text-dim); letter-spacing:.3px; }
   .client{ font-size:17px; font-weight:700; margin-top:2px; }
   .route{ font-size:13px; color: var(--text-dim); margin-top:4px; }
   .meta-line{ font-size:12px; color: var(--text-dim); margin-top:3px; }
-  .meta-line span{ margin-left:8px; }
+  .meta-line span{ margin-inline-start:8px; }
   .badges{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .badge{ font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:20px; white-space:nowrap; }
   .badge.st-booking{ background:var(--slate); color:var(--text); }
@@ -132,7 +139,7 @@
   .foot-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
   .dates{ display:flex; gap:16px; flex-wrap:wrap; }
   .date-item{ font-size:12px; }
-  .date-item .lbl{ color: var(--text-dim); margin-left:4px; }
+  .date-item .lbl{ color: var(--text-dim); margin-inline-end:4px; }
   .date-item.overdue .val{ color: var(--coral); }
   .date-item.soon .val{ color: var(--amber); }
   .money{ font-size:12px; color: var(--text-dim); }
@@ -159,6 +166,11 @@
   /* ---- modal ---- */
   .overlay{ position:fixed; inset:0; background: rgba(6,14,22,0.72); display:none; align-items:flex-start; justify-content:center; padding: 30px 16px; overflow-y:auto; z-index:50; }
   .overlay.open{ display:flex; }
+  
+  /* Fixing Confirmation Overlay Z-Index to always show on top of everything else */
+  #confirmOverlay { z-index: 3000 !important; }
+  #membersOverlay { z-index: 1000; }
+
   .modal{ background: var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; width:100%; max-width:660px; }
   .modal h2{ font-family:'Oswald'; font-size:19px; margin:0 0 16px; }
   .form-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
@@ -234,70 +246,76 @@
         <rect x="18" y="20" width="12" height="12" rx="1.5" fill="#F2A93B"/>
         <rect x="11" y="8" width="12" height="12" rx="1.5" fill="#1B3B55" stroke="#49CFC0" stroke-width="1.2"/>
       </svg>
-      <div>
-        <h2>سجل الشحنات</h2>
+      <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+        <h2 data-i18n="appTitle">سجل الشحنات</h2>
+        <button class="btn btn-lang" id="authLangToggleBtn" style="padding:4px 10px; font-size:12px;">English</button>
       </div>
     </div>
 
     <!-- Step 1: Register -->
     <div id="authStepRegister" style="display:none;">
-      <p class="sub">مفيش حساب مسجل على هذا المتصفح. سجّل بياناتك الأول عشان يتم تفعيل حسابك (مرة واحدة بس).</p>
+      <p class="sub" data-i18n="regSub">مفيش حساب مسجل على هذا المتصفح. سجّل بياناتك الأول عشان يتم تفعيل حسابك (مرة واحدة بس).</p>
       <div class="auth-error" id="registerError"></div>
       <form id="registerForm" autocomplete="on">
-        <div class="auth-field"><label>الاسم الأول</label><input type="text" id="reg_firstName" name="firstName" autocomplete="given-name" placeholder="مثال: محمد"></div>
-        <div class="auth-field"><label>اسم العائلة</label><input type="text" id="reg_lastName" name="lastName" autocomplete="family-name" placeholder="مثال: الشرقاوي"></div>
-        <div class="auth-field"><label>رقم الموبايل</label><input type="tel" id="reg_phone" name="phone" autocomplete="tel" placeholder="01xxxxxxxxx" class="mono" style="direction:ltr;text-align:right;"></div>
-        <div class="auth-field"><label>الإيميل بتاعك</label><input type="email" id="reg_email" name="email" autocomplete="username" placeholder="name@example.com" class="mono" style="direction:ltr;text-align:right;"></div>
-        <div class="auth-field"><label>كلمة السر</label><input type="password" id="reg_password" name="password" autocomplete="new-password" placeholder="6 أحرف على الأقل" class="mono" style="direction:ltr;text-align:right;"></div>
-        <div class="auth-field"><label>تأكيد كلمة السر</label><input type="password" id="reg_password2" name="password2" autocomplete="new-password" placeholder="اكتب كلمة السر تاني" class="mono" style="direction:ltr;text-align:right;"></div>
+        <div class="auth-field"><label data-i18n="firstName">الاسم الأول</label><input type="text" id="reg_firstName" name="firstName" autocomplete="given-name" placeholder="محمد"></div>
+        <div class="auth-field"><label data-i18n="lastName">اسم العائلة</label><input type="text" id="reg_lastName" name="lastName" autocomplete="family-name" placeholder="الشرقاوي"></div>
+        <div class="auth-field"><label data-i18n="phone">رقم الموبايل</label><input type="tel" id="reg_phone" name="phone" autocomplete="tel" placeholder="01xxxxxxxxx" class="mono" style="direction:ltr;text-align:right;"></div>
+        <div class="auth-field"><label data-i18n="email">الإيميل بتاعك</label><input type="email" id="reg_email" name="email" autocomplete="username" placeholder="name@example.com" class="mono" style="direction:ltr;text-align:right;"></div>
+        <div class="auth-field"><label data-i18n="password">كلمة السر</label><input type="password" id="reg_password" name="password" autocomplete="new-password" placeholder="******" class="mono" style="direction:ltr;text-align:right;"></div>
+        <div class="auth-field"><label data-i18n="confirmPassword">تأكيد كلمة السر</label><input type="password" id="reg_password2" name="password2" autocomplete="new-password" placeholder="******" class="mono" style="direction:ltr;text-align:right;"></div>
         <div class="auth-actions">
-          <button type="submit" class="btn btn-primary" id="registerSubmitBtn">تسجيل وطلب كود التأكيد</button>
+          <button type="submit" class="btn btn-primary" id="registerSubmitBtn" data-i18n="regSubmitBtn">تسجيل وطلب كود التأكيد</button>
         </div>
       </form>
-      <div class="auth-link" id="goToLoginLink">عندك حساب فعلاً؟ سجّل دخول</div>
+      <div class="auth-link" id="goToLoginLink" data-i18n="hasAccount">عندك حساب فعلاً؟ سجّل دخول</div>
     </div>
 
     <!-- Step 2: Verify -->
     <div id="authStepVerify" style="display:none;">
-      <p class="sub">تم إنشاء طلب التسجيل. اتبع الخطوتين دول عشان تستلم كود التأكيد:</p>
-      <div class="auth-note" style="background: var(--coral-dim); border-color: rgba(255,110,92,0.4);">
+      <p class="sub" data-i18n="verifySub">تم إنشاء طلب التسجيل. اتبع الخطوتين دول عشان تستلم كود التأكيد:</p>
+      <div class="auth-note" style="background: var(--coral-dim); border-color: rgba(255,110,92,0.4);" data-i18n="verifyNotePrice">
         💰 <b style="color:var(--coral);">الاشتراك في النظام 50 جنيه للجهاز الواحد.</b><br>
         ⚠️ لو الجهاز اتغيّر أو المتصفح اتغيّر (أو مسحت بيانات المتصفح)، هتحتاج كود تفعيل جديد من صاحب النظام (يعني اشتراك تاني).
       </div>
-      <div class="auth-note">
+      <div class="auth-note" data-i18n="verifyNoteSteps">
         <b>1.</b> اضغط "إرسال طلب على الإيميل" — هيفتح تطبيق الإيميل بتاعك برسالة جاهزة، بس اضغط إرسال.<br>
         <b>2.</b> اضغط "إرسال طلب على واتساب" — هيفتح واتساب برسالة جاهزة لصاحب النظام، بس اضغط إرسال.<br>
         بعد كده صاحب النظام هيبعتلك الكود على واتساب، واكتبه هنا تحت. الكود مطلوب مرة واحدة بس — بعد كده تدخل بالإيميل وكلمة السر.
       </div>
       <div class="auth-actions" style="margin-top:0;">
-        <button class="btn btn-email" id="authEmailBtn">📧 إرسال طلب على الإيميل</button>
-        <button class="btn btn-whatsapp" id="authWhatsappBtn">📱 إرسال طلب على واتساب</button>
+        <button class="btn btn-email" id="authEmailBtn" data-i18n="sendEmailBtn">📧 إرسال طلب على الإيميل</button>
+        <button class="btn btn-whatsapp" id="authWhatsappBtn" data-i18n="sendWaBtn">📱 إرسال طلب على واتساب</button>
       </div>
       <div class="auth-error" id="verifyError"></div>
-      <div class="auth-field" style="margin-top:16px;"><label>كود التأكيد اللي استلمته من صاحب النظام</label><input type="text" id="verify_code" placeholder="------" maxlength="6" class="mono" style="direction:ltr;text-align:center;letter-spacing:4px;font-size:18px;"></div>
+      <div class="auth-field" style="margin-top:16px;"><label data-i18n="verifyCodeLabel">كود التأكيد اللي استلمته من صاحب النظام</label><input type="text" id="verify_code" placeholder="------" maxlength="6" class="mono" style="direction:ltr;text-align:center;letter-spacing:4px;font-size:18px;"></div>
       <div class="auth-actions">
-        <button class="btn btn-primary" id="verifySubmitBtn">تأكيد الكود والدخول</button>
+        <button class="btn btn-primary" id="verifySubmitBtn" data-i18n="confirmCodeBtn">تأكيد الكود والدخول</button>
       </div>
-      <div class="auth-link" id="authBackLink">رجوع / تسجيل ببيانات مختلفة</div>
+      <div class="auth-link" id="authBackLink" data-i18n="backToReg">رجوع / تسجيل ببيانات مختلفة</div>
     </div>
 
     <!-- Step 3: Login (returning user on this device) -->
     <div id="authStepLogin">
-      <p class="sub">سجّل دخولك بالإيميل وكلمة السر. لو مفيش عندك حساب لسه، سجّل واحد جديد من تحت.</p>
+      <p class="sub" data-i18n="loginSub">سجّل دخولك بالإيميل أو رقم الموبايل وكلمة السر. لو مفيش عندك حساب لسه، سجّل واحد جديد من تحت.</p>
       <div class="auth-error" id="loginError"></div>
       <form id="loginForm" autocomplete="on">
-        <div class="auth-field"><label>الإيميل</label><input type="email" id="login_email" name="email" autocomplete="username" placeholder="name@example.com" class="mono" style="direction:ltr;text-align:right;"></div>
-        <div class="auth-field"><label>كلمة السر</label><input type="password" id="login_password" name="password" autocomplete="current-password" placeholder="كلمة السر" class="mono" style="direction:ltr;text-align:right;"></div>
+        <div class="auth-field"><label data-i18n="loginIdentity">الإيميل أو رقم الموبايل</label><input type="text" id="login_identity" name="username" autocomplete="username" placeholder="name@example.com / 01xxxxxxxxx" class="mono" style="direction:ltr;text-align:right;"></div>
+        <div class="auth-field"><label data-i18n="password">كلمة السر</label><input type="password" id="login_password" name="password" autocomplete="current-password" placeholder="******" class="mono" style="direction:ltr;text-align:right;"></div>
         <div class="auth-actions">
-          <button type="submit" class="btn btn-primary" id="loginSubmitBtn">تسجيل الدخول</button>
+          <button type="submit" class="btn btn-primary" id="loginSubmitBtn" data-i18n="loginBtn">تسجيل الدخول</button>
         </div>
       </form>
-      <div class="auth-link" id="goToRegisterLink">مستخدم جديد على الجهاز ده؟ سجّل حساب</div>
+      <div class="auth-link" id="goToRegisterLink" data-i18n="newAccount">مستخدم جديد على الجهاز ده؟ سجّل حساب</div>
     </div>
   </div>
 </div>
 
 <div class="wrap" id="appRoot" style="display:none;">
+  <!-- TOP BAR for prominent language switcher -->
+  <div class="top-bar">
+    <button class="btn btn-lang" id="langToggleBtn">English</button>
+  </div>
+
   <header>
     <div class="brand">
       <svg class="mark" viewBox="0 0 40 40" fill="none">
@@ -306,8 +324,8 @@
         <rect x="11" y="8" width="12" height="12" rx="1.5" fill="#1B3B55" stroke="#49CFC0" stroke-width="1.2"/>
       </svg>
       <div>
-        <h1>سجل الشحنات</h1>
-        <p>متابعة عمليات التصدير — شحن بحري</p>
+        <h1 data-i18n="appTitle">سجل الشحنات</h1>
+        <p data-i18n="appSub">متابعة عمليات التصدير — شحن بحري</p>
       </div>
     </div>
     <div class="header-actions">
@@ -315,14 +333,14 @@
       <span id="wsSwitcherWrap" style="display:none; align-self:center;">
         <select id="wsSwitcher" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:12.5px; cursor:pointer;"></select>
       </span>
-      <button class="btn-ghost btn" id="membersBtn">👥 أعضاء المجموعة</button>
-      <button class="btn-ghost btn" id="logoutBtn">تسجيل خروج</button>
+      <button class="btn-ghost btn" id="membersBtn" data-i18n="membersBtn">👥 أعضاء المجموعة</button>
+      <button class="btn-ghost btn" id="logoutBtn" data-i18n="logoutBtn">تسجيل خروج</button>
       <button class="btn-ghost btn" id="backupBtn">Backup</button>
       <button class="btn-ghost btn" id="restoreBtn">Restore</button>
-      <button class="btn-ghost btn" id="exportBtn">Export to Excel</button>
-      <button class="btn-ghost btn" id="importExcelBtn">Import from Excel</button>
-      <button class="btn-ghost btn danger" id="resetBtn">مسح الكل</button>
-      <button class="btn btn-primary" id="newBtn">+ شحنة جديدة</button>
+      <button class="btn-ghost btn" id="exportBtn" data-i18n="exportBtn">Export to Excel</button>
+      <button class="btn-ghost btn" id="importExcelBtn" data-i18n="importBtn">Import from Excel</button>
+      <button class="btn-ghost btn danger" id="resetBtn" data-i18n="resetBtn">مسح الكل</button>
+      <button class="btn btn-primary" id="newBtn" data-i18n="newBtn">+ شحنة جديدة</button>
     </div>
     <input type="file" id="restoreInput" accept="application/json" style="display:none">
     <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none">
@@ -333,15 +351,15 @@
   <div class="stats" id="stats"></div>
 
   <div class="controls">
-    <input class="search" id="searchInput" placeholder="بحث برقم الشحنة، العميل، الـ Consignee، رقم الـ BL، الحاوية، أو الـ UCR...">
+    <input class="search" id="searchInput" placeholder="بحث برقم الشحنة، العميل، الـ Consignee، رقم الـ BL، الحاوية، أو الـ UCR..." data-i18n-ph="searchPh">
     <div class="tabs" id="tabs"></div>
   </div>
   <div class="controls" id="advFilters">
     <select id="filterClient" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
     <select id="filterPort" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
     <select id="filterVessel" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
-    <button class="tab" id="filterUcrBtn">عندهم UCR</button>
-    <button class="tab" id="filterAcidBtn">عندهم ACID</button>
+    <button class="tab" id="filterUcrBtn" data-i18n="hasUcr">عندهم UCR</button>
+    <button class="tab" id="filterAcidBtn" data-i18n="hasAcid">عندهم ACID</button>
   </div>
   <div class="search-hint" style="display:none;"></div>
 
@@ -350,92 +368,93 @@
 
 <div class="overlay" id="overlay">
   <div class="modal">
-    <h2 id="modalTitle">شحنة جديدة</h2>
+    <h2 id="modalTitle" data-i18n="modalNew">شحنة جديدة</h2>
     <div class="form-grid">
 
-      <div class="section-title">بيانات أساسية</div>
-      <div class="field"><label>رقم الحجز / المرجع</label><input id="f_ref" placeholder="BKG-2026-001"></div>
-      <div class="field"><label>اسم العميل (الشاحن)</label><input id="f_client" placeholder="اسم الشركة"></div>
-      <div class="field"><label>المرسل إليه (Consignee)</label><input id="f_consignee"></div>
-      <div class="field"><label>شركة الشحن (Shipping Line)</label><input id="f_shippingLine"></div>
-      <div class="field"><label>اسم السفينة</label><input id="f_carrier"></div>
-      <div class="field"><label>البضاعة (Commodity)</label><input id="f_commodity"></div>
+      <div class="section-title" data-i18n="secBasic">بيانات أساسية</div>
+      <div class="field"><label data-i18n="ref">رقم الحجز / المرجع</label><input id="f_ref" placeholder="BKG-2026-001"></div>
+      <div class="field"><label data-i18n="client">اسم العميل (الشاحن)</label><input id="f_client" placeholder=""></div>
+      <div class="field"><label data-i18n="consignee">المرسل إليه (Consignee)</label><input id="f_consignee"></div>
+      <div class="field"><label data-i18n="shippingLine">شركة الشحن (Shipping Line)</label><input id="f_shippingLine"></div>
+      <div class="field"><label data-i18n="carrier">اسم السفينة</label><input id="f_carrier"></div>
+      <div class="field"><label data-i18n="commodity">البضاعة (Commodity)</label><input id="f_commodity"></div>
 
-      <div class="section-title">تفاصيل الحاوية والشحن</div>
+      <div class="section-title" data-i18n="secShipping">تفاصيل الحاوية والشحن</div>
       <div class="field"><label>Booking No</label><input id="f_bookingNo" placeholder="Booking No"></div>
-      <div class="field"><label>ميناء الشحن (POL)</label><input id="f_pol" placeholder="Alexandria"></div>
-      <div class="field"><label>ميناء الوصول (POD)</label><input id="f_pod" placeholder="Jebel Ali"></div>
+      <div class="field"><label data-i18n="pol">ميناء الشحن (POL)</label><input id="f_pol" placeholder="Alexandria"></div>
+      <div class="field"><label data-i18n="pod">ميناء الوصول (POD)</label><input id="f_pod" placeholder="Jebel Ali"></div>
       <div class="field full" id="containersField">
-        <label>الحاويات (الحجم / العدد / الأرقام)</label>
+        <label data-i18n="containersLabel">الحاويات (الحجم / العدد / الأرقام)</label>
         <div id="containersList"></div>
-        <button type="button" class="btn btn-ghost" id="addContainerBtn" style="margin-top:4px;">+ إضافة حاوية</button>
+        <button type="button" class="btn btn-ghost" id="addContainerBtn" style="margin-top:4px;" data-i18n="addContainer">+ إضافة حاوية</button>
       </div>
-      <div class="field"><label>نوع الشحن</label>
+      <div class="field"><label data-i18n="freightType">نوع الشحن</label>
         <select id="f_freightType"><option value="">—</option><option>FCL</option><option>LCL</option></select>
       </div>
-      <div class="field"><label>نوع البوليصة (BL Type)</label>
+      <div class="field"><label data-i18n="blType">نوع البوليصة (BL Type)</label>
         <select id="f_blType"><option value="">—</option><option value="Original">Original</option><option value="SWB">SWB</option><option value="Telex Release">Telex Release</option></select>
       </div>
-      <div class="field"><label>رقم البوليصة (BL)</label><input id="f_bl"></div>
-      <div class="field"><label>رقم السيل (Seal Number)</label><input id="f_sealNumber"></div>
+      <div class="field"><label data-i18n="bl">رقم البوليصة (BL)</label><input id="f_bl"></div>
+      <div class="field"><label data-i18n="sealNumber">رقم السيل (Seal Number)</label><input id="f_sealNumber"></div>
 
-      <div class="section-title">أرقام مرجعية</div>
+      <div class="section-title" data-i18n="secRefs">أرقام مرجعية</div>
       <div class="field"><label>رقم الـ UCR</label><input id="f_ucrNumber"></div>
       <div class="field"><label>رقم الـ ACID</label><input id="f_aciNumber"></div>
-      <div class="field full"><label>رقم الإقرار الجمركي (Export Declaration No.)</label><input id="f_exportDeclarationNumber"></div>
+      <div class="field full"><label data-i18n="exportDec">رقم الإقرار الجمركي (Export Declaration No.)</label><input id="f_exportDeclarationNumber"></div>
 
-      <div class="section-title">الحالة والمواعيد</div>
-      <div class="field"><label>الحالة</label>
+      <div class="section-title" data-i18n="secStatus">الحالة والمواعيد</div>
+      <div class="field"><label data-i18n="status">الحالة</label>
         <select id="f_status">
-          <option value="booking">حجز مؤكد</option>
-          <option value="loading">تحميل</option>
-          <option value="sailed">تم الإبحار</option>
-          <option value="arrived">وصلت الميناء</option>
-          <option value="delivered">تم التسليم</option>
-          <option value="cancelled">ملغاة</option>
+          <option value="booking" data-i18n="stBooking">حجز مؤكد</option>
+          <option value="loading" data-i18n="stLoading">تحميل</option>
+          <option value="sailed" data-i18n="stSailed">تم الإبحار</option>
+          <option value="arrived" data-i18n="stArrived">وصلت الميناء</option>
+          <option value="delivered" data-i18n="stDelivered">تم التسليم</option>
+          <option value="cancelled" data-i18n="stCancelled">ملغاة</option>
         </select>
       </div>
-      <div class="field"><label>معاد التحميل</label><input type="datetime-local" id="f_loading"></div>
-      <div class="field"><label>تاريخ الإبحار المتوقع (ETD)</label><input type="date" id="f_etd"></div>
-      <div class="field"><label>تاريخ الوصول المتوقع (ETA)</label><input type="date" id="f_eta"></div>
-      <div class="field"><label>آخر ميعاد تسليم المستندات (Cut-off)</label><input type="date" id="f_cutoff"></div>
+      <div class="field"><label data-i18n="loading">معاد التحميل</label><input type="datetime-local" id="f_loading"></div>
+      <div class="field"><label data-i18n="etd">تاريخ الإبحار المتوقع (ETD)</label><input type="date" id="f_etd"></div>
+      <div class="field"><label data-i18n="eta">تاريخ الوصول المتوقع (ETA)</label><input type="date" id="f_eta"></div>
+      <div class="field"><label data-i18n="cutoff">آخر ميعاد تسليم المستندات (Cut-off)</label><input type="date" id="f_cutoff"></div>
 
-      <div class="field full"><label>تبليغ الجهات</label>
+      <div class="section-title" data-i18n="secNotif">تبليغ الجهات</div>
+      <div class="field full">
         <div class="docs-grid">
-          <label class="doc-check"><input type="checkbox" id="f_customsNotified"> تم إبلاغ التخليص الجمركي</label>
-          <label class="doc-check"><input type="checkbox" id="f_transportNotified"> تم إبلاغ النقل</label>
+          <label class="doc-check"><input type="checkbox" id="f_customsNotified"> <span data-i18n="customsNotified">تم إبلاغ التخليص الجمركي</span></label>
+          <label class="doc-check"><input type="checkbox" id="f_transportNotified"> <span data-i18n="transportNotified">تم إبلاغ النقل</span></label>
         </div>
       </div>
 
-      <div class="section-title">المصروفات وحالة السداد</div>
-      <div class="field"><label>حالة السداد</label>
+      <div class="section-title" data-i18n="secPayment">المصروفات وحالة السداد</div>
+      <div class="field"><label data-i18n="payStatus">حالة السداد</label>
         <select id="f_paymentStatus">
-          <option value="pending">لم يتم السداد</option>
-          <option value="partial">مدفوع جزئيًا</option>
-          <option value="paid">مدفوع بالكامل</option>
+          <option value="pending" data-i18n="payPending">لم يتم السداد</option>
+          <option value="partial" data-i18n="payPartial">مدفوع جزئيًا</option>
+          <option value="paid" data-i18n="payPaid">مدفوع بالكامل</option>
         </select>
       </div>
-      <div class="field"><label>الإجمالي (Total Charges)</label><input id="f_total" readonly></div>
-      <div class="field"><label>أجرة الشحن البحري (Ocean Freight)</label><input type="number" step="0.01" id="f_oceanFreight"></div>
-      <div class="field"><label>أرضية الميناء (THC)</label><input type="number" step="0.01" id="f_thc"></div>
-      <div class="field full"><label>رسوم المستندات (Documentation Fees)</label><input type="number" step="0.01" id="f_docFees"></div>
+      <div class="field"><label data-i18n="totalCharges">الإجمالي (Total Charges)</label><input id="f_total" readonly></div>
+      <div class="field"><label data-i18n="oceanFreight">أجرة الشحن البحري (Ocean Freight)</label><input type="number" step="0.01" id="f_oceanFreight"></div>
+      <div class="field"><label data-i18n="thc">أرضية الميناء (THC)</label><input type="number" step="0.01" id="f_thc"></div>
+      <div class="field full"><label data-i18n="docFees">رسوم المستندات (Documentation Fees)</label><input type="number" step="0.01" id="f_docFees"></div>
 
-      <div class="section-title">المستندات</div>
+      <div class="section-title" data-i18n="secDocs">المستندات</div>
       <div class="docs-grid">
-        <label class="doc-check"><input type="checkbox" id="d_invoice"> فاتورة تجارية</label>
-        <label class="doc-check"><input type="checkbox" id="d_packing"> قائمة التعبئة</label>
-        <label class="doc-check"><input type="checkbox" id="d_bl"> بوليصة الشحن (BL)</label>
-        <label class="doc-check"><input type="checkbox" id="d_insurance"> بوليصة التأمين</label>
-        <label class="doc-check"><input type="checkbox" id="d_customs"> الإقرار الجمركي</label>
+        <label class="doc-check"><input type="checkbox" id="d_invoice"> <span data-i18n="doc_invoice">فاتورة تجارية</span></label>
+        <label class="doc-check"><input type="checkbox" id="d_packing"> <span data-i18n="doc_packing">قائمة التعبئة</span></label>
+        <label class="doc-check"><input type="checkbox" id="d_bl"> <span data-i18n="doc_bl">بوليصة الشحن (BL)</span></label>
+        <label class="doc-check"><input type="checkbox" id="d_insurance"> <span data-i18n="doc_insurance">بوليصة التأمين</span></label>
+        <label class="doc-check"><input type="checkbox" id="d_customs"> <span data-i18n="doc_customs">الإقرار الجمركي</span></label>
       </div>
       <div class="field full" id="condDocsContainer"></div>
 
-      <div class="section-title">ملاحظات</div>
+      <div class="section-title" data-i18n="secNotes">ملاحظات</div>
       <div class="field full"><textarea id="f_notes"></textarea></div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" id="cancelBtn">إلغاء</button>
-      <button class="btn btn-primary" id="saveBtn">حفظ الشحنة</button>
+      <button class="btn btn-ghost" id="cancelBtn" data-i18n="cancelBtn">إلغاء</button>
+      <button class="btn btn-primary" id="saveBtn" data-i18n="saveBtn">حفظ الشحنة</button>
     </div>
   </div>
 </div>
@@ -444,23 +463,26 @@
   <div class="modal" style="max-width:380px; margin-top:120px;">
     <h2 id="confirmMsg" style="font-size:16px;"></h2>
     <div class="modal-actions">
-      <button class="btn btn-ghost" id="confirmNo">إلغاء</button>
-      <button class="btn btn-primary" id="confirmYes" style="background:var(--coral);">تأكيد</button>
+      <button class="btn btn-ghost" id="confirmNo" data-i18n="cancelBtn">إلغاء</button>
+      <button class="btn btn-primary" id="confirmYes" style="background:var(--coral);" data-i18n="confirmBtn">تأكيد</button>
     </div>
   </div>
 </div>
 
 <div class="overlay" id="membersOverlay">
   <div class="modal" style="max-width:480px;">
-    <h2 style="font-size:18px;">أعضاء المجموعة</h2>
-    <p style="font-size:12.5px; color:var(--text-dim); margin-top:-8px;">المجموعة الحالية اللي شغّال عليها دلوقتي.</p>
+    <h2 style="font-size:18px;" data-i18n="membersTitle">أعضاء المجموعة</h2>
+    <p style="font-size:12.5px; color:var(--text-dim); margin-top:-8px;" data-i18n="membersSub">المجموعة الحالية اللي شغّال عليها دلوقتي.</p>
     <div id="membersInviteRow" style="display:none; gap:8px; margin:10px 0 16px;">
-      <input id="memberPhoneInput" placeholder="رقم موبايل المستخدم المراد إضافته" style="flex:1; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px; color:var(--text); font-family:inherit; font-size:13.5px;">
-      <button class="btn btn-primary" id="memberInviteBtn">إضافة</button>
+      <input id="memberPhoneInput" placeholder="رقم موبايل المستخدم المراد إضافته" data-i18n-ph="phoneInvitePh" style="flex:1; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:10px; color:var(--text); font-family:inherit; font-size:13.5px;">
+      <button class="btn btn-primary" id="memberInviteBtn" data-i18n="addBtn">إضافة</button>
     </div>
     <div id="membersList"></div>
+    <div id="leaveGroupRow" style="display:none; margin-top:16px; pt-3; border-top:1px solid var(--line);">
+      <button class="btn btn-ghost danger" id="leaveGroupBtn" style="width:100%; justify-content:center;" data-i18n="leaveGroupBtn">🚪 مغادرة المجموعة</button>
+    </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" id="membersCloseBtn">إغلاق</button>
+      <button class="btn btn-ghost" id="membersCloseBtn" data-i18n="closeBtn">إغلاق</button>
     </div>
   </div>
 </div>
@@ -481,22 +503,335 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
 const USERS_DOC = doc(db, 'app', 'users');
 
-const STORAGE_KEY = 'shipment_tracker_data_v1';
+/* ============ I18N DICTIONARY ============ */
+let currentLang = localStorage.getItem('str_lang') || 'ar';
+
+const i18n = {
+  ar: {
+    appTitle: "سجل الشحنات",
+    appSub: "متابعة عمليات التصدير — شحن بحري",
+    membersBtn: "👥 أعضاء المجموعة",
+    logoutBtn: "تسجيل خروج",
+    exportBtn: "تصدير إلى Excel",
+    importBtn: "استيراد من Excel",
+    resetBtn: "مسح الكل",
+    newBtn: "+ شحنة جديدة",
+    searchPh: "بحث برقم الشحنة، العميل، الـ Consignee، رقم الـ BL، الحاوية، أو الـ UCR...",
+    allClients: "كل العملاء",
+    allPorts: "كل الموانئ",
+    allVessels: "كل المراكب",
+    hasUcr: "عندهم UCR",
+    hasAcid: "عندهم ACID",
+    totalShipments: "إجمالي الشحنات",
+    inProgress: "قيد التنفيذ",
+    urgentFollowup: "تحتاج متابعة عاجلة",
+    deliveredCount: "تم التسليم",
+    alertCutoff: "اقترب الـ Cut-off",
+    alertEtd: "الـ ETD خلال 48 ساعة",
+    alertArrived: "وصلت ولم يتم تسليمها بعد",
+    tabAll: "الكل",
+    tabUrgent: "عاجل",
+    stBooking: "حجز مؤكد",
+    stLoading: "تحميل",
+    stSailed: "إبحار",
+    stArrived: "وصول الميناء",
+    stDelivered: "تسليم",
+    stCancelled: "ملغاة",
+    urgentBadge: "عاجل",
+    cancelledStrip: "تم إلغاء هذه الشحنة",
+    lblLoading: "تحميل",
+    lblEtd: "ETD",
+    lblEta: "ETA",
+    lblCutoff: "Cut-off",
+    flagCustoms: "تخليص",
+    flagTransport: "نقل",
+    docsCount: "مستندات",
+    emptyTitle: "لسه مفيش شحنات مسجلة",
+    emptySearchTitle: "مفيش نتائج مطابقة",
+    emptySub: "ابدئي بتسجيل أول شحنة من زرار \"شحنة جديدة\".",
+    emptySearchSub: "جربي تغيري كلمة البحث أو الفلتر.",
+    modalNew: "شحنة جديدة",
+    modalEdit: "تعديل الشحنة",
+    secBasic: "بيانات أساسية",
+    ref: "رقم الحجز / المرجع",
+    client: "اسم العميل (الشاحن)",
+    consignee: "المرسل إليه (Consignee)",
+    shippingLine: "شركة الشحن (Shipping Line)",
+    carrier: "اسم السفينة",
+    commodity: "البضاعة (Commodity)",
+    secShipping: "تفاصيل الحاوية والشحن",
+    pol: "ميناء الشحن (POL)",
+    pod: "ميناء الوصول (POD)",
+    containersLabel: "الحاويات (الحجم / العدد / الأرقام)",
+    addContainer: "+ إضافة حاوية",
+    freightType: "نوع الشحن",
+    blType: "نوع البوليصة (BL Type)",
+    bl: "رقم البوليصة (BL)",
+    sealNumber: "رقم السيل (Seal Number)",
+    secRefs: "أرقام مرجعية",
+    exportDec: "رقم الإقرار الجمركي (Export Declaration No.)",
+    secStatus: "الحالة والمواعيد",
+    status: "الحالة",
+    loading: "معاد التحميل",
+    etd: "تاريخ الإبحار المتوقع (ETD)",
+    eta: "تاريخ الوصول المتوقع (ETA)",
+    cutoff: "آخر ميعاد تسليم المستندات (Cut-off)",
+    secNotif: "تبليغ الجهات",
+    customsNotified: "تم إبلاغ التخليص الجمركي",
+    transportNotified: "تم إبلاغ النقل",
+    secPayment: "المصروفات وحالة السداد",
+    payStatus: "حالة السداد",
+    payPending: "لم يتم السداد",
+    payPartial: "مدفوع جزئيًا",
+    payPaid: "مدفوع بالكامل",
+    totalCharges: "الإجمالي (Total Charges)",
+    oceanFreight: "أجرة الشحن البحري (Ocean Freight)",
+    thc: "أرضية الميناء (THC)",
+    docFees: "رسوم المستندات (Documentation Fees)",
+    secDocs: "المستندات",
+    doc_invoice: "فاتورة تجارية",
+    doc_packing: "قائمة التعبئة",
+    doc_bl: "بوليصة الشحن (BL)",
+    doc_insurance: "بوليصة التأمين",
+    doc_customs: "الإقرار الجمركي",
+    doc_coo: "شهادة المنشأ",
+    doc_form13: "نموذج ١٣",
+    doc_msds: "MSDS",
+    doc_health: "شهادة صحية (Health Cert.)",
+    doc_phyto: "شهادة صحة نباتية (Phytosanitary)",
+    doc_eur1: "EUR.1",
+    doc_inspection: "شهادة فحص (Inspection Cert.)",
+    condDocsTitle: "مستندات مشروطة",
+    requiredLabel: "مطلوبة؟",
+    receivedLabel: "تم الاستلام",
+    secNotes: "ملاحظات",
+    cancelBtn: "إلغاء",
+    saveBtn: "حفظ الشحنة",
+    confirmBtn: "تأكيد",
+    membersTitle: "أعضاء المجموعة",
+    membersSub: "المجموعة الحالية اللي شغّال عليها دلوقتي.",
+    phoneInvitePh: "رقم موبايل المستخدم المراد إضافته",
+    addBtn: "إضافة",
+    leaveGroupBtn: "🚪 مغادرة المجموعة",
+    closeBtn: "إغلاق",
+    regSub: "مفيش حساب مسجل على هذا المتصفح. سجّل بياناتك الأول عشان يتم تفعيل حسابك (مرة واحدة بس).",
+    firstName: "الاسم الأول",
+    lastName: "اسم العائلة",
+    phone: "رقم الموبايل",
+    email: "الإيميل بتاعك",
+    password: "كلمة السر",
+    confirmPassword: "تأكيد كلمة السر",
+    regSubmitBtn: "تسجيل وطلب كود التأكيد",
+    hasAccount: "عندك حساب فعلاً؟ سجّل دخول",
+    verifySub: "تم إنشاء طلب التسجيل. اتبع الخطوتين دول عشان تستلم كود التأكيد:",
+    verifyNotePrice: "💰 الاشتراك في النظام 50 جنيه للجهاز الواحد. <br>⚠️ لو الجهاز اتغيّر أو المتصفح اتغيّر (أو مسحت بيانات المتصفح)، هتحتاج كود تفعيل جديد.",
+    verifyNoteSteps: "<b>1.</b> اضغط \"إرسال طلب على الإيميل\" — هيفتح تطبيق الإيميل برسالة جاهزة.<br><b>2.</b> اضغط \"إرسال طلب على واتساب\" — هيفتح واتساب برسالة جاهزة.<br>بعد كده هيبعتلك الكود وتكتبه هنا.",
+    sendEmailBtn: "📧 إرسال طلب على الإيميل",
+    sendWaBtn: "📱 إرسال طلب على واتساب",
+    verifyCodeLabel: "كود التأكيد اللي استلمته من صاحب النظام",
+    confirmCodeBtn: "تأكيد الكود والدخول",
+    backToReg: "رجوع / تسجيل ببيانات مختلفة",
+    loginSub: "سجّل دخولك بالإيميل أو رقم الموبايل وكلمة السر. لو مفيش عندك حساب لسه، سجّل واحد جديد من تحت.",
+    loginIdentity: "الإيميل أو رقم الموبايل",
+    loginBtn: "تسجيل الدخول",
+    newAccount: "مستخدم جديد على الجهاز ده؟ سجّل حساب",
+    myPrivateWs: "بياناتي الخاصة",
+    sharedWs: "مجموعة مشتركة",
+    ownerLabel: "المالك",
+    adminLabel: "أدمن",
+    memberLabel: "عضو"
+  },
+  en: {
+    appTitle: "Shipment Tracker",
+    appSub: "Export Operations Tracking — Sea Freight",
+    membersBtn: "👥 Team Members",
+    logoutBtn: "Log Out",
+    exportBtn: "Export to Excel",
+    importBtn: "Import from Excel",
+    resetBtn: "Reset All",
+    newBtn: "+ New Shipment",
+    searchPh: "Search BKG Ref, Client, Consignee, BL No, Container, UCR...",
+    allClients: "All Clients",
+    allPorts: "All Ports",
+    allVessels: "All Vessels",
+    hasUcr: "Has UCR",
+    hasAcid: "Has ACID",
+    totalShipments: "Total Shipments",
+    inProgress: "In Progress",
+    urgentFollowup: "Urgent Follow-up",
+    deliveredCount: "Delivered",
+    alertCutoff: "Cut-off Approaching",
+    alertEtd: "ETD within 48 Hours",
+    alertArrived: "Arrived & Not Delivered",
+    tabAll: "All",
+    tabUrgent: "Urgent",
+    stBooking: "Booking Confirmed",
+    stLoading: "Loading",
+    stSailed: "Sailed",
+    stArrived: "Arrived at Port",
+    stDelivered: "Delivered",
+    stCancelled: "Cancelled",
+    urgentBadge: "Urgent",
+    cancelledStrip: "This shipment has been cancelled",
+    lblLoading: "Loading",
+    lblEtd: "ETD",
+    lblEta: "ETA",
+    lblCutoff: "Cut-off",
+    flagCustoms: "Customs",
+    flagTransport: "Transport",
+    docsCount: "docs",
+    emptyTitle: "No shipments recorded yet",
+    emptySearchTitle: "No matching results",
+    emptySub: "Start by registering your first shipment using '+ New Shipment'.",
+    emptySearchSub: "Try changing your search query or active filters.",
+    modalNew: "New Shipment",
+    modalEdit: "Edit Shipment",
+    secBasic: "Basic Details",
+    ref: "Booking / Ref No.",
+    client: "Client Name (Shipper)",
+    consignee: "Consignee",
+    shippingLine: "Shipping Line",
+    carrier: "Vessel / Carrier Name",
+    commodity: "Commodity",
+    secShipping: "Container & Freight Details",
+    pol: "Port of Loading (POL)",
+    pod: "Port of Discharge (POD)",
+    containersLabel: "Containers (Size / Count / Numbers)",
+    addContainer: "+ Add Container",
+    freightType: "Freight Type",
+    blType: "BL Type",
+    bl: "BL Number",
+    sealNumber: "Seal Number",
+    secRefs: "Reference Numbers",
+    exportDec: "Export Declaration No.",
+    secStatus: "Status & Schedule",
+    status: "Status",
+    loading: "Loading Date/Time",
+    etd: "ETD",
+    eta: "ETA",
+    cutoff: "Cut-off Date",
+    secNotif: "Notifications",
+    customsNotified: "Customs Clearance Notified",
+    transportNotified: "Transport Notified",
+    secPayment: "Charges & Payment Status",
+    payStatus: "Payment Status",
+    payPending: "Pending",
+    payPartial: "Partially Paid",
+    payPaid: "Paid in Full",
+    totalCharges: "Total Charges",
+    oceanFreight: "Ocean Freight",
+    thc: "THC",
+    docFees: "Documentation Fees",
+    secDocs: "Documents",
+    doc_invoice: "Commercial Invoice",
+    doc_packing: "Packing List",
+    doc_bl: "Bill of Lading (BL)",
+    doc_insurance: "Insurance Policy",
+    doc_customs: "Customs Declaration",
+    doc_coo: "Certificate of Origin",
+    doc_form13: "Form 13",
+    doc_msds: "MSDS",
+    doc_health: "Health Certificate",
+    doc_phyto: "Phytosanitary Certificate",
+    doc_eur1: "EUR.1",
+    doc_inspection: "Inspection Certificate",
+    condDocsTitle: "Conditional Documents",
+    requiredLabel: "Required?",
+    receivedLabel: "Received",
+    secNotes: "Notes",
+    cancelBtn: "Cancel",
+    saveBtn: "Save Shipment",
+    confirmBtn: "Confirm",
+    membersTitle: "Group Members",
+    membersSub: "Current active workspace team members.",
+    phoneInvitePh: "User Phone Number to Invite",
+    addBtn: "Add",
+    leaveGroupBtn: "🚪 Leave Group",
+    closeBtn: "Close",
+    regSub: "No account registered on this browser. Register once to activate your device.",
+    firstName: "First Name",
+    lastName: "Last Name",
+    phone: "Phone Number",
+    email: "Email Address",
+    password: "Password",
+    confirmPassword: "Confirm Password",
+    regSubmitBtn: "Register & Request Code",
+    hasAccount: "Already have an account? Log In",
+    verifySub: "Registration request created. Follow these steps to receive your code:",
+    verifyNotePrice: "💰 Device subscription is 50 EGP per device. <br>⚠️ If browser or device changes, a new activation code is required.",
+    verifyNoteSteps: "<b>1.</b> Click 'Send Email Request' to open your email client.<br><b>2.</b> Click 'Send WhatsApp Request' to notify the owner.<br>Enter the code sent to you below.",
+    sendEmailBtn: "📧 Request via Email",
+    sendWaBtn: "📱 Request via WhatsApp",
+    verifyCodeLabel: "Verification Code from Owner",
+    confirmCodeBtn: "Verify & Enter",
+    backToReg: "Back / Register with different details",
+    loginSub: "Log in with Email/Phone and Password. If you don't have an account, register below.",
+    loginIdentity: "Email or Phone Number",
+    loginBtn: "Log In",
+    newAccount: "New user on this device? Register",
+    myPrivateWs: "My Private Workspace",
+    sharedWs: "Shared Workspace",
+    ownerLabel: "Owner",
+    adminLabel: "Admin",
+    memberLabel: "Member"
+  }
+};
+
+function t(key){
+  return (i18n[currentLang] && i18n[currentLang][key]) || (i18n['ar'][key]) || key;
+}
+
+function updatePageLanguageUI(){
+  document.documentElement.lang = currentLang;
+  document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+  
+  const toggleText = currentLang === 'ar' ? 'English' : 'عربي';
+  document.getElementById('langToggleBtn').textContent = toggleText;
+  document.getElementById('authLangToggleBtn').textContent = toggleText;
+
+  // Translate static data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    el.innerHTML = t(k);
+  });
+
+  // Translate placeholders
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const k = el.dataset.i18nPh;
+    el.placeholder = t(k);
+  });
+}
+
+function toggleLanguage(){
+  currentLang = currentLang === 'ar' ? 'en' : 'ar';
+  localStorage.setItem('str_lang', currentLang);
+  updatePageLanguageUI();
+  renderCondDocFields();
+  render();
+}
+
+document.getElementById('langToggleBtn').onclick = toggleLanguage;
+document.getElementById('authLangToggleBtn').onclick = toggleLanguage;
+
 const STAGES = [
-  {key:'booking', label:'حجز مؤكد'},
-  {key:'loading', label:'تحميل'},
-  {key:'sailed', label:'إبحار'},
-  {key:'arrived', label:'وصول الميناء'},
-  {key:'delivered', label:'تسليم'}
+  {key:'booking', labelKey:'stBooking'},
+  {key:'loading', labelKey:'stLoading'},
+  {key:'sailed', labelKey:'stSailed'},
+  {key:'arrived', labelKey:'stArrived'},
+  {key:'delivered', labelKey:'stDelivered'}
 ];
 const ALWAYS_DOC_KEYS = ['invoice','packing','bl','insurance','customs'];
 const COND_DOC_KEYS = ['coo','form13','msds','health','phyto','eur1','inspection'];
-const DOC_LABELS = {
-  invoice:'فاتورة تجارية', packing:'قائمة التعبئة', bl:'بوليصة الشحن', insurance:'بوليصة التأمين', customs:'الإقرار الجمركي',
-  coo:'شهادة المنشأ', form13:'نموذج ١٣', msds:'MSDS', health:'شهادة صحية (Health Cert.)',
-  phyto:'شهادة صحة نباتية (Phytosanitary)', eur1:'EUR.1', inspection:'شهادة فحص (Inspection Cert.)'
-};
-const PAY_LABELS = {pending:'لم يتم السداد', partial:'مدفوع جزئيًا', paid:'مدفوع بالكامل'};
+
+function getDocLabel(k){
+  return t('doc_' + k);
+}
+
+function getPayLabel(k){
+  if(k==='paid') return t('payPaid');
+  if(k==='partial') return t('payPartial');
+  return t('payPending');
+}
 
 let shipments = [];
 let activeFilter = 'all';
@@ -553,12 +888,14 @@ function cardAccent(s){
 function fmtDate(dateStr){
   if(!dateStr) return '—';
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('ar-EG', {day:'2-digit', month:'short'});
+  const loc = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+  return d.toLocaleDateString(loc, {day:'2-digit', month:'short'});
 }
 function fmtDateTime(dtStr){
   if(!dtStr) return '—';
   const d = new Date(dtStr);
-  return d.toLocaleDateString('ar-EG', {day:'2-digit', month:'short'}) + ' · ' + d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+  const loc = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+  return d.toLocaleDateString(loc, {day:'2-digit', month:'short'}) + ' · ' + d.toLocaleTimeString(loc, {hour:'2-digit', minute:'2-digit'});
 }
 function fmtMoney(n){
   n = Number(n) || 0;
@@ -580,10 +917,10 @@ function renderStats(){
   const urgent = shipments.filter(isUrgent);
   const delivered = shipments.filter(s => s.status === 'delivered');
   document.getElementById('stats').innerHTML = `
-    <div class="stat"><div class="num">${shipments.length}</div><div class="lbl">إجمالي الشحنات</div></div>
-    <div class="stat"><div class="num">${active.length}</div><div class="lbl">قيد التنفيذ</div></div>
-    <div class="stat urgent"><div class="num">${urgent.length}</div><div class="lbl">تحتاج متابعة عاجلة</div></div>
-    <div class="stat done"><div class="num">${delivered.length}</div><div class="lbl">تم التسليم</div></div>
+    <div class="stat"><div class="num">${shipments.length}</div><div class="lbl">${t('totalShipments')}</div></div>
+    <div class="stat"><div class="num">${active.length}</div><div class="lbl">${t('inProgress')}</div></div>
+    <div class="stat urgent"><div class="num">${urgent.length}</div><div class="lbl">${t('urgentFollowup')}</div></div>
+    <div class="stat done"><div class="num">${delivered.length}</div><div class="lbl">${t('deliveredCount')}</div></div>
   `;
 }
 
@@ -593,9 +930,9 @@ function renderAlerts(){
   const arrivedNotDelivered = shipments.filter(s => s.status === 'arrived');
 
   const groups = [
-    {items:cutoffSoon, cls:'a-red', title:'اقترب الـ Cut-off'},
-    {items:etdSoon, cls:'a-amber', title:'الـ ETD خلال 48 ساعة'},
-    {items:arrivedNotDelivered, cls:'a-blue', title:'وصلت ولم يتم تسليمها بعد'}
+    {items:cutoffSoon, cls:'a-red', title:t('alertCutoff')},
+    {items:etdSoon, cls:'a-amber', title:t('alertEtd')},
+    {items:arrivedNotDelivered, cls:'a-blue', title:t('alertArrived')}
   ].filter(g => g.items.length > 0);
 
   const panel = document.getElementById('alertsPanel');
@@ -604,7 +941,7 @@ function renderAlerts(){
     <div class="alert-box ${g.cls}">
       <div class="alert-title">${g.title} (${g.items.length})</div>
       <div class="alert-chips">
-        ${g.items.map(s => `<button class="alert-chip" data-open="${s.id}">${s.ref||'بدون رقم'} · ${s.client||''}</button>`).join('')}
+        ${g.items.map(s => `<button class="alert-chip" data-open="${s.id}">${s.ref||'—'} · ${s.client||''}</button>`).join('')}
       </div>
     </div>
   `).join('');
@@ -616,12 +953,12 @@ function renderTabs(){
   STAGES.forEach(st => counts[st.key] = shipments.filter(s=>s.status===st.key).length);
   counts.urgent = shipments.filter(isUrgent).length;
   const tabsDef = [
-    {key:'all', label:'الكل'},
-    ...STAGES.map(s=>({key:s.key,label:s.label})),
-    {key:'urgent', label:'عاجل'}
+    {key:'all', label:t('tabAll')},
+    ...STAGES.map(s=>({key:s.key,label:t(s.labelKey)})),
+    {key:'urgent', label:t('tabUrgent')}
   ];
-  document.getElementById('tabs').innerHTML = tabsDef.map(t => `
-    <button class="tab ${activeFilter===t.key?'active':''}" data-filter="${t.key}">${t.label} (${counts[t.key]||0})</button>
+  document.getElementById('tabs').innerHTML = tabsDef.map(tDef => `
+    <button class="tab ${activeFilter===tDef.key?'active':''}" data-filter="${tDef.key}">${tDef.label} (${counts[tDef.key]||0})</button>
   `).join('');
   document.querySelectorAll('.tab').forEach(btn=>{
     btn.onclick = () => { activeFilter = btn.dataset.filter; render(); };
@@ -630,7 +967,7 @@ function renderTabs(){
 
 function timelineHTML(s){
   if(s.status === 'cancelled'){
-    return `<div class="cancelled-strip">تم إلغاء هذه الشحنة</div>`;
+    return `<div class="cancelled-strip">${t('cancelledStrip')}</div>`;
   }
   const curIdx = STAGES.findIndex(st => st.key === s.status);
   return `<div class="timeline"><div class="timeline-track">
@@ -640,7 +977,7 @@ function timelineHTML(s){
       if(s.status==='delivered'){ dotClass += ' done-all'; }
       else if(i < curIdx) dotClass += ' filled';
       else if(i === curIdx){ dotClass += ' current'; lblClass += ' current'; }
-      return `<div class="tl-stage"><div class="${dotClass}"></div><div class="${lblClass}">${st.label}</div></div>`;
+      return `<div class="tl-stage"><div class="${dotClass}"></div><div class="${lblClass}">${t(st.labelKey)}</div></div>`;
     }).join('')}
   </div></div>`;
 }
@@ -652,27 +989,28 @@ function cardHTML(s){
   const etdDays = daysUntil(s.etd);
   const cutoffClass = cutoffDays!==null && cutoffDays<0 ? 'overdue' : (cutoffDays!==null && cutoffDays<=2 ? 'soon' : '');
   const etdClass = etdDays!==null && etdDays<0 ? 'overdue' : (etdDays!==null && etdDays<=2 ? 'soon' : '');
-  const statusLabel = (STAGES.find(st=>st.key===s.status) || {label:'ملغاة'}).label;
+  const stMatch = STAGES.find(st=>st.key===s.status);
+  const statusLabel = stMatch ? t(stMatch.labelKey) : t('stCancelled');
   const reqPills = COND_DOC_KEYS.filter(k => s[k+'Required']).map(k =>
-    `<span class="req-pill ${s.docs&&s.docs[k]?'done':''}">${DOC_LABELS[k]} ${s.docs&&s.docs[k]?'✓':''}</span>`
+    `<span class="req-pill ${s.docs&&s.docs[k]?'done':''}">${getDocLabel(k)} ${s.docs&&s.docs[k]?'✓':''}</span>`
   ).join('');
   const containerBits = (Array.isArray(s.containers) && s.containers.length)
-    ? s.containers.map(c => [c.size, c.count ? ('×'+c.count) : ''].filter(Boolean).join('')).filter(Boolean).join('، ')
-    : (s.containerSize || (s.containerCount ? ('عدد: '+s.containerCount) : ''));
+    ? s.containers.map(c => [c.size, c.count ? ('×'+c.count) : ''].filter(Boolean).join('')).filter(Boolean).join(', ')
+    : (s.containerSize || (s.containerCount ? ('Count: '+s.containerCount) : ''));
   const metaBits = [containerBits, s.freightType, s.blType, s.commodity].filter(Boolean).join(' · ');
   const total = totalCharges(s);
   return `
   <div class="card acc-${cardAccent(s)}">
     <div class="card-top">
       <div>
-        <div class="ref mono">${s.ref || 'بدون رقم'}${s.bookingNo ? ' · Booking: ' + s.bookingNo : ''}</div>
-        <div class="client">${s.client || 'بدون اسم عميل'}</div>
+        <div class="ref mono">${s.ref || '—'}${s.bookingNo ? ' · Booking: ' + s.bookingNo : ''}</div>
+        <div class="client">${s.client || '—'}</div>
         <div class="route">${s.pol||'—'} <span class="mono">→</span> ${s.pod||'—'} ${s.shippingLine?'· '+s.shippingLine:''}</div>
         ${metaBits ? `<div class="meta-line">${metaBits}</div>` : ''}
         ${s.container ? `<div class="meta-line mono" style="opacity:.85;">${s.container}</div>` : ''}
       </div>
       <div class="badges">
-        ${urgent?'<span class="badge urgent-flag">عاجل</span>':''}
+        ${urgent?`<span class="badge urgent-flag">${t('urgentBadge')}</span>`:''}
         <span class="badge st-${s.status}">${statusLabel}</span>
       </div>
     </div>
@@ -681,28 +1019,28 @@ function cardHTML(s){
     <div class="card-foot">
       <div class="foot-row">
         <div class="dates">
-          ${s.loading ? `<div class="date-item"><span class="lbl">تحميل</span><span class="val mono">${fmtDateTime(s.loading)}</span></div>` : ''}
-          <div class="date-item ${etdClass}"><span class="lbl">ETD</span><span class="val mono">${fmtDate(s.etd)}</span></div>
-          <div class="date-item"><span class="lbl">ETA</span><span class="val mono">${fmtDate(s.eta)}</span></div>
-          <div class="date-item ${cutoffClass}"><span class="lbl">Cut-off</span><span class="val mono">${fmtDate(s.cutoff)}</span></div>
+          ${s.loading ? `<div class="date-item"><span class="lbl">${t('lblLoading')}</span><span class="val mono">${fmtDateTime(s.loading)}</span></div>` : ''}
+          <div class="date-item ${etdClass}"><span class="lbl">${t('lblEtd')}</span><span class="val mono">${fmtDate(s.etd)}</span></div>
+          <div class="date-item"><span class="lbl">${t('lblEta')}</span><span class="val mono">${fmtDate(s.eta)}</span></div>
+          <div class="date-item ${cutoffClass}"><span class="lbl">${t('lblCutoff')}</span><span class="val mono">${fmtDate(s.cutoff)}</span></div>
         </div>
         <div class="quick-flags">
-          <button class="flag-btn ${s.customsNotified?'on':''}" data-toggle="customsNotified" data-id="${s.id}">تخليص</button>
-          <button class="flag-btn ${s.transportNotified?'on':''}" data-toggle="transportNotified" data-id="${s.id}">نقل</button>
+          <button class="flag-btn ${s.customsNotified?'on':''}" data-toggle="customsNotified" data-id="${s.id}">${t('flagCustoms')}</button>
+          <button class="flag-btn ${s.transportNotified?'on':''}" data-toggle="transportNotified" data-id="${s.id}">${t('flagTransport')}</button>
         </div>
       </div>
       <div class="foot-row">
         <div class="money">
-          ${total>0 ? `<span class="badge pay-${s.paymentStatus||'pending'}">${PAY_LABELS[s.paymentStatus||'pending']}</span> <span class="val mono">${fmtMoney(total)}</span>` : ''}
+          ${total>0 ? `<span class="badge pay-${s.paymentStatus||'pending'}">${getPayLabel(s.paymentStatus||'pending')}</span> <span class="val mono">${fmtMoney(total)}</span>` : ''}
         </div>
         <div style="display:flex; align-items:center; gap:14px;">
           <div class="docs-prog">
             <div class="prog-bar"><div class="prog-fill" style="width:${docsTotal? (docsDone/docsTotal)*100 : 0}%"></div></div>
-            <span>${docsDone}/${docsTotal} مستندات</span>
+            <span>${docsDone}/${docsTotal} ${t('docsCount')}</span>
           </div>
           <div class="row-actions">
-            <button class="icon-btn" title="تعديل" data-edit="${s.id}">✎</button>
-            <button class="icon-btn del" title="حذف" data-del="${s.id}">🗑️</button>
+            <button class="icon-btn" title="Edit" data-edit="${s.id}">✎</button>
+            <button class="icon-btn del" title="Delete" data-del="${s.id}">🗑️</button>
           </div>
         </div>
       </div>
@@ -715,17 +1053,18 @@ function fillFilterSelect(sel, values, current, allLabel){
     values.map(v => `<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
 }
 function renderAdvFilters(){
-  const clients = [...new Set(shipments.map(s=>s.client).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
-  const ports = [...new Set(shipments.flatMap(s=>[s.pol,s.pod]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
-  const vessels = [...new Set(shipments.map(s=>s.carrier).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
-  fillFilterSelect(document.getElementById('filterClient'), clients, filterClient, 'كل العملاء');
-  fillFilterSelect(document.getElementById('filterPort'), ports, filterPort, 'كل الموانئ');
-  fillFilterSelect(document.getElementById('filterVessel'), vessels, filterVessel, 'كل المراكب');
+  const clients = [...new Set(shipments.map(s=>s.client).filter(Boolean))].sort((a,b)=>a.localeCompare(b, currentLang==='ar'?'ar':'en'));
+  const ports = [...new Set(shipments.flatMap(s=>[s.pol,s.pod]).filter(Boolean))].sort((a,b)=>a.localeCompare(b, currentLang==='ar'?'ar':'en'));
+  const vessels = [...new Set(shipments.map(s=>s.carrier).filter(Boolean))].sort((a,b)=>a.localeCompare(b, currentLang==='ar'?'ar':'en'));
+  fillFilterSelect(document.getElementById('filterClient'), clients, filterClient, t('allClients'));
+  fillFilterSelect(document.getElementById('filterPort'), ports, filterPort, t('allPorts'));
+  fillFilterSelect(document.getElementById('filterVessel'), vessels, filterVessel, t('allVessels'));
   document.getElementById('filterUcrBtn').classList.toggle('active', filterHasUcr);
   document.getElementById('filterAcidBtn').classList.toggle('active', filterHasAcid);
 }
 
 function render(){
+  updatePageLanguageUI();
   renderStats();
   renderAlerts();
   renderTabs();
@@ -754,7 +1093,7 @@ function render(){
   });
   const listEl = document.getElementById('list');
   if(items.length === 0){
-    listEl.innerHTML = `<div class="empty"><h3>${shipments.length===0 ? 'لسه مفيش شحنات مسجلة' : 'مفيش نتائج مطابقة'}</h3><p>${shipments.length===0 ? 'ابدئي بتسجيل أول شحنة من زرار "شحنة جديدة".' : 'جربي تغيري كلمة البحث أو الفلتر.'}</p></div>`;
+    listEl.innerHTML = `<div class="empty"><h3>${shipments.length===0 ? t('emptyTitle') : t('emptySearchTitle')}</h3><p>${shipments.length===0 ? t('emptySub') : t('emptySearchSub')}</p></div>`;
     return;
   }
   listEl.innerHTML = items.map(cardHTML).join('');
@@ -774,11 +1113,11 @@ function toggleFlag(id, field){
 /* ---- conditional docs (dynamic) ---- */
 function renderCondDocFields(){
   const wrap = document.getElementById('condDocsContainer');
-  wrap.innerHTML = '<label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px;">مستندات مشروطة</label>' +
+  wrap.innerHTML = `<label style="font-size:12px;color:var(--text-dim);display:block;margin-bottom:6px;">${t('condDocsTitle')}</label>` +
     '<div class="docs-grid">' + COND_DOC_KEYS.map(k => `
     <div class="cond-doc">
-      <label class="doc-check"><input type="checkbox" id="req_${k}"> ${DOC_LABELS[k]} مطلوبة؟</label>
-      <label class="doc-check" id="wrap_${k}"><input type="checkbox" id="d_${k}"> تم الاستلام</label>
+      <label class="doc-check"><input type="checkbox" id="req_${k}"> ${getDocLabel(k)} ${t('requiredLabel')}</label>
+      <label class="doc-check" id="wrap_${k}"><input type="checkbox" id="d_${k}"> ${t('receivedLabel')}</label>
     </div>`).join('') + '</div>';
   COND_DOC_KEYS.forEach(k => { document.getElementById('req_'+k).onchange = updateCondDocVisibility; });
 }
@@ -815,12 +1154,12 @@ function containerRowHTML(row, idx){
   return `
   <div class="container-row" data-idx="${idx}" style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
     <select class="cr-size" style="flex:1; min-width:90px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px; color:var(--text); font-family:inherit; font-size:13px;">
-      <option value="">حجم —</option>
+      <option value="">Size —</option>
       ${opts.map(o => `<option ${row.size===o?'selected':''}>${o}</option>`).join('')}
     </select>
-    <input type="number" min="1" step="1" class="cr-count" placeholder="العدد" value="${row.count||''}" style="width:74px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px; color:var(--text); font-family:inherit; font-size:13px;">
-    <input class="cr-numbers" placeholder="أرقام الحاويات (افصل بفاصلة ,)" value="${(row.numbers||'').toString().replace(/"/g,'&quot;')}" style="flex:2; min-width:170px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px; color:var(--text); font-family:inherit; font-size:13px;">
-    <button type="button" class="icon-btn cr-remove" title="حذف الحاوية دي">✕</button>
+    <input type="number" min="1" step="1" class="cr-count" placeholder="Count" value="${row.count||''}" style="width:74px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px; color:var(--text); font-family:inherit; font-size:13px;">
+    <input class="cr-numbers" placeholder="Container Numbers (comma separated)" value="${(row.numbers||'').toString().replace(/"/g,'&quot;')}" style="flex:2; min-width:170px; background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:9px; color:var(--text); font-family:inherit; font-size:13px;">
+    <button type="button" class="icon-btn cr-remove" title="Remove Container">✕</button>
   </div>`;
 }
 function renderContainersList(){
@@ -845,7 +1184,7 @@ document.getElementById('addContainerBtn').onclick = () => {
 function openModal(id){
   editingId = id || null;
   const s = id ? shipments.find(x=>x.id===id) : {};
-  document.getElementById('modalTitle').textContent = id ? 'تعديل الشحنة' : 'شحنة جديدة';
+  document.getElementById('modalTitle').textContent = id ? t('modalEdit') : t('modalNew');
   currentContainers = normalizeContainers(s);
   renderContainersList();
   document.getElementById('f_ref').value = s.ref || '';
@@ -947,7 +1286,8 @@ function saveShipment(){
 }
 
 function deleteShipment(id){
-  showConfirm('تحذفي الشحنة دي؟').then(ok => {
+  const msg = currentLang==='ar' ? 'هل أنت تأكد من حذف هذه الشحنة؟' : 'Delete this shipment?';
+  showConfirm(msg).then(ok => {
     if(!ok) return;
     shipments = shipments.filter(s => s.id !== id);
     saveData();
@@ -984,38 +1324,41 @@ function downloadBlob(content, filename, mime){
 }
 
 function exportToExcel(){
-  if(shipments.length === 0){ alert('مفيش شحنات لتصديرها.'); return; }
-  const rows = shipments.map(s => ({
-    'ID': s.id,
-    'المرجع': s.ref, 'Booking No': s.bookingNo, 'العميل': s.client, 'Consignee': s.consignee, 'شركة الشحن': s.shippingLine, 'السفينة': s.carrier,
-    'البضاعة': s.commodity, 'POL': s.pol, 'POD': s.pod, 'حجم الحاوية': s.containerSize, 'عدد الحاويات': s.containerCount, 'نوع الشحن': s.freightType,
-    'BL Type': s.blType, 'رقم الحاوية': s.container, 'تفاصيل الحاويات': (s.containers||[]).map(c => {
-      let str = c.size || '';
-      if(c.count) str += '×' + c.count;
-      if(c.numbers && c.numbers.length) str += ' (' + c.numbers.join(', ') + ')';
-      return str.trim();
-    }).filter(Boolean).join(' | '), 'رقم BL': s.bl, 'رقم السيل': s.sealNumber,
-    'UCR': s.ucrNumber, 'ACID': s.aciNumber, 'رقم الإقرار الجمركي': s.exportDeclarationNumber,
-    'الحالة': (STAGES.find(st=>st.key===s.status)||{label:s.status}).label,
-    'معاد التحميل': s.loading, 'ETD': s.etd, 'ETA': s.eta, 'Cut-off': s.cutoff,
-    'تبليغ التخليص': s.customsNotified ? 'نعم' : 'لا', 'تبليغ النقل': s.transportNotified ? 'نعم' : 'لا',
-    'حالة السداد': PAY_LABELS[s.paymentStatus||'pending'],
-    'Ocean Freight': s.oceanFreight||0, 'THC': s.thc||0, 'Documentation Fees': s.docFees||0, 'الإجمالي': totalCharges(s),
-    'ملاحظات': s.notes
-  }));
+  if(shipments.length === 0){ alert(currentLang==='ar'?'مفيش شحنات لتصديرها.':'No shipments to export.'); return; }
+  const rows = shipments.map(s => {
+    const stMatch = STAGES.find(st=>st.key===s.status);
+    return {
+      'ID': s.id,
+      'المرجع / Ref': s.ref, 'Booking No': s.bookingNo, 'العميل / Client': s.client, 'Consignee': s.consignee, 'شركة الشحن / Line': s.shippingLine, 'السفينة / Vessel': s.carrier,
+      'البضاعة / Commodity': s.commodity, 'POL': s.pol, 'POD': s.pod, 'حجم الحاوية / Size': s.containerSize, 'عدد الحاويات / Count': s.containerCount, 'نوع الشحن / Freight': s.freightType,
+      'BL Type': s.blType, 'رقم الحاوية / Container': s.container, 'تفاصيل الحاويات': (s.containers||[]).map(c => {
+        let str = c.size || '';
+        if(c.count) str += '×' + c.count;
+        if(c.numbers && c.numbers.length) str += ' (' + c.numbers.join(', ') + ')';
+        return str.trim();
+      }).filter(Boolean).join(' | '), 'رقم BL': s.bl, 'رقم السيل / Seal': s.sealNumber,
+      'UCR': s.ucrNumber, 'ACID': s.aciNumber, 'رقم الإقرار الجمركي / Declaration': s.exportDeclarationNumber,
+      'الحالة / Status': stMatch ? t(stMatch.labelKey) : s.status,
+      'معاد التحميل / Loading': s.loading, 'ETD': s.etd, 'ETA': s.eta, 'Cut-off': s.cutoff,
+      'تبليغ التخليص / Customs Notified': s.customsNotified ? 'YES' : 'NO', 'تبليغ النقل / Transport Notified': s.transportNotified ? 'YES' : 'NO',
+      'حالة السداد / Payment Status': getPayLabel(s.paymentStatus||'pending'),
+      'Ocean Freight': s.oceanFreight||0, 'THC': s.thc||0, 'Documentation Fees': s.docFees||0, 'الإجمالي / Total': totalCharges(s),
+      'ملاحظات / Notes': s.notes
+    };
+  });
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'الشحنات');
+  XLSX.utils.book_append_sheet(wb, ws, 'Shipments');
   XLSX.writeFile(wb, 'shipments_' + new Date().toISOString().slice(0,10) + '.xlsx');
 }
 
 const EXCEL_HEADER_MAP = {
-  'المرجع':'ref', 'Booking No':'bookingNo', 'العميل':'client', 'Consignee':'consignee', 'شركة الشحن':'shippingLine', 'السفينة':'carrier',
-  'البضاعة':'commodity', 'POL':'pol', 'POD':'pod', 'حجم الحاوية':'containerSize', 'عدد الحاويات':'containerCount', 'نوع الشحن':'freightType',
-  'BL Type':'blType', 'رقم الحاوية':'container', 'رقم BL':'bl', 'رقم السيل':'sealNumber',
-  'UCR':'ucrNumber', 'ACID':'aciNumber', 'ACI':'aciNumber', 'رقم الإقرار الجمركي':'exportDeclarationNumber',
-  'معاد التحميل':'loading', 'ETD':'etd', 'ETA':'eta', 'Cut-off':'cutoff',
-  'Ocean Freight':'oceanFreight', 'THC':'thc', 'Documentation Fees':'docFees', 'ملاحظات':'notes'
+  'المرجع':'ref', 'المرجع / Ref':'ref', 'Booking No':'bookingNo', 'العميل':'client', 'العميل / Client':'client', 'Consignee':'consignee', 'شركة الشحن':'shippingLine', 'شركة الشحن / Line':'shippingLine', 'السفينة':'carrier', 'السفينة / Vessel':'carrier',
+  'البضاعة':'commodity', 'البضاعة / Commodity':'commodity', 'POL':'pol', 'POD':'pod', 'حجم الحاوية':'containerSize', 'حجم الحاوية / Size':'containerSize', 'عدد الحاويات':'containerCount', 'عدد الحاويات / Count':'containerCount', 'نوع الشحن':'freightType', 'نوع الشحن / Freight':'freightType',
+  'BL Type':'blType', 'رقم الحاوية':'container', 'رقم الحاوية / Container':'container', 'رقم BL':'bl', 'رقم السيل':'sealNumber', 'رقم السيل / Seal':'sealNumber',
+  'UCR':'ucrNumber', 'ACID':'aciNumber', 'ACI':'aciNumber', 'رقم الإقرار الجمركي':'exportDeclarationNumber', 'رقم الإقرار الجمركي / Declaration':'exportDeclarationNumber',
+  'معاد التحميل':'loading', 'معاد التحميل / Loading':'loading', 'ETD':'etd', 'ETA':'eta', 'Cut-off':'cutoff',
+  'Ocean Freight':'oceanFreight', 'THC':'thc', 'Documentation Fees':'docFees', 'ملاحظات':'notes', 'ملاحظات / Notes':'notes'
 };
 const EXCEL_NUMBER_FIELDS = ['oceanFreight','thc','docFees','containerCount'];
 
@@ -1038,8 +1381,6 @@ function importFromExcel(file){
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
       if(rows.length === 0){ alert('الملف فاضي، مفيش صفوف لاستيرادها.'); return; }
-      const statusByLabel = {}; STAGES.forEach(st => statusByLabel[st.label] = st.key);
-      const payByLabel = {}; Object.keys(PAY_LABELS).forEach(k => payByLabel[PAY_LABELS[k]] = k);
       let created = 0, updated = 0;
       rows.forEach(row => {
         const id = (row['ID'] || '').toString().trim();
@@ -1055,10 +1396,6 @@ function importFromExcel(file){
           }
         });
         if(row['تفاصيل الحاويات']){ s.containers = parseContainersDetail(String(row['تفاصيل الحاويات'])); }
-        if(row['الحالة']){ s.status = statusByLabel[row['الحالة']] || s.status; }
-        if(row['حالة السداد']){ s.paymentStatus = payByLabel[row['حالة السداد']] || s.paymentStatus; }
-        if('تبليغ التخليص' in row){ s.customsNotified = row['تبليغ التخليص'] === 'نعم'; }
-        if('تبليغ النقل' in row){ s.transportNotified = row['تبليغ النقل'] === 'نعم'; }
         if(isNew){ shipments.push(s); created++; } else { updated++; }
       });
       saveData();
@@ -1066,14 +1403,14 @@ function importFromExcel(file){
       alert('تم الاستيراد بنجاح: ' + created + ' شحنة جديدة، ' + updated + ' شحنة تم تحديثها.');
     }catch(err){
       console.error('excel import error', err);
-      alert('حصل خطأ أثناء قراءة ملف الإكسل. تأكد إنه نفس الملف اللي تم تصديره من النظام (أو نسخة معدَّلة منه) ومحفوظ بصيغة xlsx.');
+      alert('حصل خطأ أثناء قراءة ملف الإكسل.');
     }
   };
   reader.readAsArrayBuffer(file);
 }
 
 function backupData(){
-  if(shipments.length === 0){ alert('مفيش بيانات لعمل نسخة احتياطية.'); return; }
+  if(shipments.length === 0){ alert(currentLang==='ar'?'مفيش بيانات لعمل نسخة احتياطية.':'No data for backup.'); return; }
   downloadBlob(JSON.stringify(shipments, null, 2), 'shipments_backup_' + new Date().toISOString().slice(0,10) + '.json', 'application/json');
 }
 
@@ -1083,7 +1420,8 @@ function restoreData(file){
     try{
       const parsed = JSON.parse(reader.result);
       if(!Array.isArray(parsed)) throw new Error('invalid format');
-      showConfirm('هيتم استبدال كل البيانات الحالية بالملف ده. تأكيد؟').then(ok => {
+      const msg = currentLang==='ar'?'هيتم استبدال كل البيانات الحالية بالملف ده. تأكيد؟':'Replace all current data with this file?';
+      showConfirm(msg).then(ok => {
         if(!ok) return;
         shipments = parsed;
         saveData();
@@ -1116,7 +1454,8 @@ document.getElementById('importExcelBtn').onclick = () => document.getElementByI
 document.getElementById('importExcelInput').onchange = (e) => { if(e.target.files[0]) importFromExcel(e.target.files[0]); e.target.value=''; };
 ['f_oceanFreight','f_thc','f_docFees'].forEach(id => document.getElementById(id).oninput = recalcTotal);
 document.getElementById('resetBtn').onclick = () => {
-  showConfirm('هيتم مسح كل الشحنات المسجلة نهائيًا. تأكيد؟').then(ok => {
+  const msg = currentLang==='ar'?'هيتم مسح كل الشحنات المسجلة نهائيًا. تأكيد؟':'Permanently delete all shipments?';
+  showConfirm(msg).then(ok => {
     if(!ok) return;
     shipments = [];
     saveData();
@@ -1125,30 +1464,11 @@ document.getElementById('resetBtn').onclick = () => {
 };
 
 /* ============ AUTH ============ */
-const AUTH_USERS_KEY = 'str_auth_users';       // كل المستخدمين اللي سجلوا وتم تفعيلهم على الجهاز ده (دايم، ميتمسحش عند الخروج)
-const AUTH_SESSION_KEY = 'str_auth_session';   // إيميل المستخدم اللي داخل حاليًا (يتمسح عند تسجيل الخروج)
-const AUTH_PENDING_KEY = 'str_auth_pending';   // طلب تسجيل لسه في انتظار كود التأكيد
+const AUTH_SESSION_KEY = 'str_auth_session';
+const AUTH_PENDING_KEY = 'str_auth_pending';
 const OWNER_EMAIL = 'mhelsharkawyy@gmail.com';
-const OWNER_WHATSAPP = '201000700163'; // 01000700163 بصيغة دولية بدون الصفر وبكود مصر 20
+const OWNER_WHATSAPP = '201000700163';
 const WEB3FORMS_ACCESS_KEY = 'fe3da370-ad64-4f8b-8543-a9099b44db71';
-
-function sendCodeEmailAuto(pending){
-  if(!WEB3FORMS_ACCESS_KEY || WEB3FORMS_ACCESS_KEY.indexOf('PASTE_') === 0) return; // لسه محتاج Access Key
-  fetch('https://api.web3forms.com/submit', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      access_key: WEB3FORMS_ACCESS_KEY,
-      subject: 'طلب تسجيل جديد - سجل الشحنات',
-      from_name: pending.firstName + ' ' + pending.lastName,
-      'الاسم': pending.firstName + ' ' + pending.lastName,
-      'رقم الموبايل': pending.phone,
-      'الإيميل': pending.email,
-      'كود التأكيد': pending.code,
-      'وقت الطلب': new Date(pending.createdAt).toLocaleString('ar-EG')
-    })
-  }).catch(err => console.error('email send error', err));
-}
 
 function genCode(){
   return String(Math.floor(100000 + Math.random()*900000));
@@ -1161,16 +1481,14 @@ onSnapshot(USERS_DOC, snap => {
   usersCache = (data && data.list) || [];
   const firstLoad = !usersLoaded;
   usersLoaded = true;
-  if(firstLoad) initAuth(); // أول ما نجيب بيانات المستخدمين، نقرر أي شاشة نعرض
+  if(firstLoad) initAuth();
 }, err => {
   console.error('users sync error', err);
   if(!usersLoaded){ usersLoaded = true; initAuth(); }
 });
-setTimeout(() => { if(!usersLoaded){ usersLoaded = true; initAuth(); } }, 6000); // احتياطي لو الاتصال بطيء أو فشل
+setTimeout(() => { if(!usersLoaded){ usersLoaded = true; initAuth(); } }, 6000);
 
-function getUsers(){
-  return usersCache;
-}
+function getUsers(){ return usersCache; }
 function saveUsers(list){
   usersCache = list;
   return setDoc(USERS_DOC, { list });
@@ -1189,7 +1507,6 @@ function showApp(){
 let currentUser = null;
 let activeWorkspaceId = null;
 
-// يضمن إن كل مستخدم عنده بيانات خاصة بيه (workspaceId) وقايمة مجموعات انضم لها (joinedWorkspaces)
 function ensureUserShape(user){
   let changed = false;
   if(!user.workspaceId){ user.workspaceId = genWorkspaceId(); changed = true; }
@@ -1201,15 +1518,10 @@ function persistUser(user){
   const users = getUsers().map(u => u.email === user.email ? user : u);
   saveUsers(users);
 }
-function workspaceLabel(user, wsId){
-  if(wsId === user.workspaceId) return 'بياناتي الخاصة';
-  const g = user.joinedWorkspaces.find(w => w.id === wsId);
-  return g ? g.label : 'مجموعة مشتركة';
-}
 function renderWorkspaceSwitcher(user){
   const wrap = document.getElementById('wsSwitcherWrap');
   const select = document.getElementById('wsSwitcher');
-  const allWs = [{ id: user.workspaceId, label: 'بياناتي الخاصة' }, ...user.joinedWorkspaces];
+  const allWs = [{ id: user.workspaceId, label: t('myPrivateWs') }, ...user.joinedWorkspaces];
   if(allWs.length <= 1){ wrap.style.display = 'none'; return; }
   wrap.style.display = '';
   select.innerHTML = allWs.map(w => '<option value="' + w.id + '"' + (w.id === activeWorkspaceId ? ' selected' : '') + '>' + w.label + '</option>').join('');
@@ -1228,7 +1540,6 @@ function enterApp(user){
   currentUser = user;
   document.getElementById('currentUserName').textContent = user.firstName + ' ' + user.lastName;
 
-  // نتتبع المجموعات اللي شافها المستخدم قبل كده عشان نلاحظ لو حد ضافه لمجموعة جديدة
   const seenKey = 'str_seen_ws_' + user.email;
   let seen = [];
   try{ seen = JSON.parse(localStorage.getItem(seenKey)) || []; }catch(e){ seen = []; }
@@ -1238,7 +1549,7 @@ function enterApp(user){
   const savedActive = localStorage.getItem('str_active_ws_' + user.email);
   const validIds = [user.workspaceId, ...user.joinedWorkspaces.map(w => w.id)];
   if(newGroup){
-    activeWorkspaceId = newGroup.id; // أول ما ينضم لمجموعة جديدة، نوريه بياناتها على طول
+    activeWorkspaceId = newGroup.id;
     localStorage.setItem('str_active_ws_' + user.email, newGroup.id);
   } else if(savedActive && validIds.includes(savedActive)){
     activeWorkspaceId = savedActive;
@@ -1249,13 +1560,10 @@ function enterApp(user){
   renderWorkspaceSwitcher(user);
   loadData(activeWorkspaceId);
   showApp();
-
-  if(newGroup){
-    setTimeout(() => alert('تمت إضافتك لـ "' + newGroup.label + '" بنجاح. بياناتك الخاصة لسه محفوظة زي ما هي، وتقدر تتنقل بينهم من القايمة اللي جنب اسمك.'), 300);
-  }
 }
 document.getElementById('wsSwitcher').addEventListener('change', e => switchWorkspace(e.target.value));
-/* ---- أعضاء المجموعة والصلاحيات (أدمن) ---- */
+
+/* ---- أعضاء المجموعة والصلاحيات ---- */
 function getWorkspaceOwner(wsId, usersList){
   if(!currentUser) return null;
   if(wsId === currentUser.workspaceId) return currentUser;
@@ -1277,25 +1585,25 @@ function canManageMembers(wsId){
 function inviteUserToWorkspace(){
   if(!currentUser) return;
   const wsId = activeWorkspaceId;
-  if(!canManageMembers(wsId)){ alert('لازم تكون صاحب المجموعة أو أدمن عشان تضيف أعضاء.'); return; }
+  if(!canManageMembers(wsId)){ alert(currentLang==='ar'?'لازم تكون صاحب المجموعة أو أدمن عشان تضيف أعضاء.':'Must be owner or admin to invite members.'); return; }
   const phoneInput = document.getElementById('memberPhoneInput');
   const cleaned = phoneInput.value.trim();
   if(!cleaned) return;
   const users = getUsers();
   const target = users.find(u => u.phone === cleaned);
   if(!target){
-    alert('مفيش حساب مسجل بالرقم ده. المستخدم لازم يسجّل حساب جديد في النظام الأول بنفس رقم الموبايل ده، وبعدها تقدر تضيفه.');
+    alert(currentLang==='ar'?'مفيش حساب مسجل بالرقم ده.':'No user registered with this phone number.');
     return;
   }
   const owner = getWorkspaceOwner(wsId, users);
   if(!owner) return;
-  if(target.email === owner.email){ alert('ده رقم موبايل صاحب المجموعة نفسه.'); return; }
+  if(target.email === owner.email){ alert(currentLang==='ar'?'ده رقم موبايل صاحب المجموعة نفسه.':'This is owner\'s phone.'); return; }
   const alreadyMember = (owner.workspaceMembers || []).some(m => m.email === target.email);
-  if(alreadyMember){ alert(target.firstName + ' ' + target.lastName + ' عنده وصول للمجموعة دي بالفعل.'); return; }
+  if(alreadyMember){ alert(target.firstName + ' ' + target.lastName + ' member already.'); return; }
   const targetJoined = Array.isArray(target.joinedWorkspaces) ? target.joinedWorkspaces : [];
   const updatedTarget = {
     ...target,
-    joinedWorkspaces: [...targetJoined, { id: wsId, label: 'مجموعة ' + owner.firstName + ' ' + owner.lastName }]
+    joinedWorkspaces: [...targetJoined, { id: wsId, label: (currentLang==='ar'?'مجموعة ':'Group ') + owner.firstName + ' ' + owner.lastName }]
   };
   const updatedOwner = {
     ...owner,
@@ -1309,26 +1617,15 @@ function inviteUserToWorkspace(){
   saveUsers(newUsers);
   if(currentUser.email === owner.email) currentUser = updatedOwner;
   phoneInput.value = '';
-  alert('تم بنجاح! ' + target.firstName + ' ' + target.lastName + ' بقى عنده وصول للمجموعة، وهيقدر يضيف ويعدّل فيها. هتظهرله في قايمة المجموعات أول ما يسجّل دخول (أو يعمل تحديث للصفحة لو داخل دلوقتي).');
+  alert(currentLang==='ar'?'تمت الإضافة بنجاح!':'Added successfully!');
   renderMembersList();
 }
-function toggleAdminRole(email){
-  const wsId = activeWorkspaceId;
-  if(!canManageMembers(wsId)) return;
-  const users = getUsers();
-  const owner = getWorkspaceOwner(wsId, users);
-  if(!owner) return;
-  const members = (owner.workspaceMembers || []).map(m => m.email === email ? { ...m, role: m.role === 'admin' ? 'member' : 'admin' } : m);
-  const updatedOwner = { ...owner, workspaceMembers: members };
-  const newUsers = users.map(u => u.email === owner.email ? updatedOwner : u);
-  saveUsers(newUsers);
-  if(currentUser.email === owner.email) currentUser = updatedOwner;
-  renderMembersList();
-}
+
 function removeMemberFromWorkspace(email){
   const wsId = activeWorkspaceId;
   if(!canManageMembers(wsId)) return;
-  showConfirm('تحذف هذا العضو من المجموعة؟ هيفقد الوصول لبياناتها فورًا.').then(ok => {
+  const msg = currentLang==='ar'?'تحذف هذا العضو من المجموعة؟':'Remove this member?';
+  showConfirm(msg).then(ok => {
     if(!ok) return;
     const users = getUsers();
     const owner = getWorkspaceOwner(wsId, users);
@@ -1349,23 +1646,63 @@ function removeMemberFromWorkspace(email){
     renderMembersList();
   });
 }
+
+function leaveCurrentGroup(){
+  if(!currentUser) return;
+  const wsId = activeWorkspaceId;
+  if(wsId === currentUser.workspaceId){
+    alert(currentLang==='ar'?'دي مجموعتك الخاصة، ما ينفعش تغادرها!':'This is your own workspace, you cannot leave it!');
+    return;
+  }
+  const msg = currentLang==='ar'?'هل أنت تأكد من مغادرة هذه المجموعة؟':'Are you sure you want to leave this group?';
+  showConfirm(msg).then(ok => {
+    if(!ok) return;
+    const users = getUsers();
+    const owner = getWorkspaceOwner(wsId, users);
+
+    const updatedJoined = (currentUser.joinedWorkspaces || []).filter(w => w.id !== wsId);
+    const updatedUser = { ...currentUser, joinedWorkspaces: updatedJoined };
+
+    let updatedOwner = owner;
+    if(owner){
+      const updatedMembers = (owner.workspaceMembers || []).filter(m => m.email !== currentUser.email);
+      updatedOwner = { ...owner, workspaceMembers: updatedMembers };
+    }
+
+    const newUsers = users.map(u => {
+      if(u.email === currentUser.email) return updatedUser;
+      if(owner && u.email === owner.email) return updatedOwner;
+      return u;
+    });
+    saveUsers(newUsers);
+
+    currentUser = updatedUser;
+    closeMembersModal();
+    switchWorkspace(currentUser.workspaceId);
+  });
+}
+
 function renderMembersList(){
   const wsId = activeWorkspaceId;
   const owner = getWorkspaceOwner(wsId);
   const listEl = document.getElementById('membersList');
   const inviteRow = document.getElementById('membersInviteRow');
-  if(!owner){ listEl.innerHTML = ''; inviteRow.style.display = 'none'; return; }
+  const leaveRow = document.getElementById('leaveGroupRow');
+
+  if(!owner){ listEl.innerHTML = ''; inviteRow.style.display = 'none'; leaveRow.style.display = 'none'; return; }
   const manage = canManageMembers(wsId);
   inviteRow.style.display = manage ? 'flex' : 'none';
+
+  const isOwner = currentUser && (wsId === currentUser.workspaceId);
+  leaveRow.style.display = isOwner ? 'none' : 'block';
+
   const members = Array.isArray(owner.workspaceMembers) ? owner.workspaceMembers : [];
   const rows = [{ email: owner.email, firstName: owner.firstName, lastName: owner.lastName, phone: owner.phone, role: 'owner' }, ...members];
   listEl.innerHTML = rows.map(m => {
-    const roleLabel = m.role === 'owner' ? 'المالك' : (m.role === 'admin' ? 'أدمن' : 'عضو');
-    const badgeClass = m.role === 'owner' ? 'st-delivered' : (m.role === 'admin' ? 'st-loading' : 'st-booking');
+    const roleLabel = m.role === 'owner' ? t('ownerLabel') : (m.role === 'admin' ? t('adminLabel') : t('memberLabel'));
     const isMe = currentUser && m.email === currentUser.email;
     let actions = '';
     if(manage && m.role !== 'owner'){
-      actions += `<button class="btn-ghost btn" data-promote="${m.email}" style="font-size:11px; padding:5px 8px;">${m.role === 'admin' ? 'إلغاء الأدمن' : 'تعيين أدمن'}</button>`;
       actions += `<button class="btn-ghost btn danger" data-removemember="${m.email}" style="font-size:11px; padding:5px 8px;">حذف</button>`;
     }
     return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap;">
@@ -1373,130 +1710,121 @@ function renderMembersList(){
         <div style="font-weight:600; font-size:14px;">${m.firstName || ''} ${m.lastName || ''} ${isMe ? '(أنت)' : ''}</div>
         <div class="mono" style="font-size:11.5px; color:var(--text-dim);">${m.phone || ''}</div>
       </div>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <span class="badge ${badgeClass}">${roleLabel}</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="badge" style="background:var(--panel-2); color:var(--teal); font-size:11px;">${roleLabel}</span>
         ${actions}
       </div>
     </div>`;
   }).join('');
-  document.querySelectorAll('#membersList [data-promote]').forEach(b => b.onclick = () => toggleAdminRole(b.dataset.promote));
-  document.querySelectorAll('#membersList [data-removemember]').forEach(b => b.onclick = () => removeMemberFromWorkspace(b.dataset.removemember));
+
+  listEl.querySelectorAll('[data-removemember]').forEach(b => {
+    b.onclick = () => removeMemberFromWorkspace(b.dataset.removemember);
+  });
 }
+
 function openMembersModal(){
-  if(!currentUser) return;
   renderMembersList();
   document.getElementById('membersOverlay').classList.add('open');
 }
 function closeMembersModal(){
   document.getElementById('membersOverlay').classList.remove('open');
 }
-function showAuthOverlay(){
-  document.getElementById('appRoot').style.display = 'none';
-  document.getElementById('authOverlay').classList.remove('hidden');
-}
-function hideAllAuthSteps(){
-  document.getElementById('authStepRegister').style.display = 'none';
-  document.getElementById('authStepVerify').style.display = 'none';
-  document.getElementById('authStepLogin').style.display = 'none';
-}
-function showRegisterStep(){
-  hideAllAuthSteps();
-  document.getElementById('authStepRegister').style.display = '';
-  document.getElementById('registerError').classList.remove('show');
-}
-function showVerifyStep(pending){
-  hideAllAuthSteps();
-  document.getElementById('authStepVerify').style.display = '';
-  document.getElementById('verifyError').classList.remove('show');
-  document.getElementById('verify_code').value = '';
-  wireAuthActionLinks(pending);
-}
-function showLoginStep(){
-  hideAllAuthSteps();
-  document.getElementById('authStepLogin').style.display = '';
-  document.getElementById('loginError').classList.remove('show');
+
+document.getElementById('membersBtn').onclick = openMembersModal;
+document.getElementById('membersCloseBtn').onclick = closeMembersModal;
+document.getElementById('memberInviteBtn').onclick = inviteUserToWorkspace;
+document.getElementById('leaveGroupBtn').onclick = leaveCurrentGroup;
+
+/* AUTH UI Logic */
+function showStep(stepName){
+  document.getElementById('authStepRegister').style.display = stepName === 'register' ? 'block' : 'none';
+  document.getElementById('authStepVerify').style.display = stepName === 'verify' ? 'block' : 'none';
+  document.getElementById('authStepLogin').style.display = stepName === 'login' ? 'block' : 'none';
 }
 
-function buildEmailLink(pending){
-  const subject = encodeURIComponent('طلب تسجيل جديد - سجل الشحنات');
-  const body = encodeURIComponent(
-    'اسم مقدم الطلب: ' + pending.firstName + ' ' + pending.lastName + '\n' +
-    'رقم الموبايل: ' + pending.phone + '\n' +
-    'الإيميل: ' + pending.email + '\n' +
-    'كود التأكيد: ' + pending.code + '\n' +
-    'وقت الطلب: ' + new Date(pending.createdAt).toLocaleString('ar-EG')
-  );
-  return 'mailto:' + OWNER_EMAIL + '?subject=' + subject + '&body=' + body;
-}
-function buildWhatsappLink(pending){
-  const text = encodeURIComponent(
-    'مرحبًا، أنا ' + pending.firstName + ' ' + pending.lastName + ' ورقم موبايلي ' + pending.phone +
-    '. بعتّ طلب تسجيل على سجل الشحنات وكود التأكيد اتبعت على إيميلك (' + OWNER_EMAIL + '). ' +
-    'برجاء إرسال الكود لي على واتساب للتأكيد.'
-  );
-  return 'https://wa.me/' + OWNER_WHATSAPP + '?text=' + text;
-}
-function wireAuthActionLinks(pending){
-  document.getElementById('authEmailBtn').onclick = () => { window.location.href = buildEmailLink(pending); };
-  document.getElementById('authWhatsappBtn').onclick = () => { window.open(buildWhatsappLink(pending), '_blank'); };
+function initAuth(){
+  const sess = getSessionEmail();
+  const users = getUsers();
+  if(sess){
+    const u = users.find(x => x.email === sess);
+    if(u){ enterApp(u); return; }
+  }
+  const pending = getPendingReg();
+  if(pending){
+    showStep('verify');
+  } else if(users.length > 0){
+    showStep('login');
+  } else {
+    showStep('register');
+  }
 }
 
-function submitRegister(){
-  const firstName = document.getElementById('reg_firstName').value.trim();
-  const lastName = document.getElementById('reg_lastName').value.trim();
+document.getElementById('goToLoginLink').onclick = () => showStep('login');
+document.getElementById('goToRegisterLink').onclick = () => showStep('register');
+document.getElementById('authBackLink').onclick = () => {
+  localStorage.removeItem(AUTH_PENDING_KEY);
+  showStep('register');
+};
+
+/* Login Handler - Phone or Email */
+document.getElementById('loginForm').onsubmit = (e) => {
+  e.preventDefault();
+  const identity = document.getElementById('login_identity').value.trim();
+  const pass = document.getElementById('login_password').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.classList.remove('show');
+
+  const users = getUsers();
+  // Check against either email OR phone
+  const u = users.find(x => (x.email.toLowerCase() === identity.toLowerCase() || x.phone === identity) && x.password === pass);
+  if(!u){
+    errEl.textContent = currentLang === 'ar' ? 'الإيميل/رقم الموبايل أو كلمة السر غير صحيحة.' : 'Invalid Email/Phone or password.';
+    errEl.classList.add('show');
+    return;
+  }
+  localStorage.setItem(AUTH_SESSION_KEY, u.email);
+  enterApp(u);
+};
+
+/* Register Handler */
+document.getElementById('registerForm').onsubmit = (e) => {
+  e.preventDefault();
+  const fn = document.getElementById('reg_firstName').value.trim();
+  const ln = document.getElementById('reg_lastName').value.trim();
   const phone = document.getElementById('reg_phone').value.trim();
   const email = document.getElementById('reg_email').value.trim().toLowerCase();
-  const password = document.getElementById('reg_password').value;
-  const password2 = document.getElementById('reg_password2').value;
+  const pass = document.getElementById('reg_password').value.trim();
+  const pass2 = document.getElementById('reg_password2').value.trim();
   const errEl = document.getElementById('registerError');
-
-  if(!firstName || !lastName || !phone || !email || !password){
-    errEl.textContent = 'من فضلك اكمّل كل الحقول.';
-    errEl.classList.add('show');
-    return;
-  }
-  if(!/^01[0-9]{9}$/.test(phone)){
-    errEl.textContent = 'رقم الموبايل لازم يكون رقم مصري صحيح (يبدأ بـ 01 ومكون من 11 رقم).';
-    errEl.classList.add('show');
-    return;
-  }
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-    errEl.textContent = 'من فضلك اكتب إيميل صحيح.';
-    errEl.classList.add('show');
-    return;
-  }
-  if(password.length < 6){
-    errEl.textContent = 'كلمة السر لازم تكون 6 أحرف على الأقل.';
-    errEl.classList.add('show');
-    return;
-  }
-  if(password !== password2){
-    errEl.textContent = 'كلمة السر وتأكيدها غير متطابقين.';
-    errEl.classList.add('show');
-    return;
-  }
-  if(getUsers().some(u => u.email === email)){
-    errEl.textContent = 'الإيميل ده مسجل قبل كده. جرّب تسجّل دخول.';
-    errEl.classList.add('show');
-    return;
-  }
   errEl.classList.remove('show');
-  const pending = { firstName, lastName, phone, email, password, code: genCode(), createdAt: Date.now() };
-  localStorage.setItem(AUTH_PENDING_KEY, JSON.stringify(pending));
-  sendCodeEmailAuto(pending);
-  showVerifyStep(pending);
-}
 
-function submitVerify(){
-  const pending = getPendingReg();
-  const errEl = document.getElementById('verifyError');
-  if(!pending){ showRegisterStep(); return; }
-  const entered = document.getElementById('verify_code').value.trim();
-  if(entered !== pending.code){
-    errEl.textContent = 'الكود مش صحيح. تأكد من الكود اللي استلمته على واتساب من صاحب النظام.';
-    errEl.classList.add('show');
-    return;
+  if(!fn || !ln || !phone || !email || !pass){
+    errEl.textContent = currentLang === 'ar' ? 'من فضلك املا كل الحقول.' : 'Please fill all fields.';
+    errEl.classList.add('show'); return;
   }
+  if(pass !== pass2){
+    errEl.textContent = currentLang === 'ar' ? 'كلمات السر غير متطابقة.' : 'Passwords do not match.';
+    errEl.classList.add('show'); return;
+  }
+
+  const code = genCode();
+  const pending = { firstName: fn, lastName: ln, phone, email, password: pass, code, createdAt: Date.now() };
+  localStorage.setItem(AUTH_PENDING_KEY, JSON.stringify(pending));
+  showStep('verify');
+};
+
+/* Verify Handler */
+document.getElementById('verifySubmitBtn').onclick = () => {
+  const pending = getPendingReg();
+  const codeVal = document.getElementById('verify_code').value.trim();
+  const errEl = document.getElementById('verifyError');
+  errEl.classList.remove('show');
+
+  if(!pending || codeVal !== pending.code){
+    errEl.textContent = currentLang === 'ar' ? 'كود التأكيد غير صحيح.' : 'Invalid verification code.';
+    errEl.classList.add('show'); return;
+  }
+
   const users = getUsers();
   const newUser = {
     firstName: pending.firstName,
@@ -1504,76 +1832,28 @@ function submitVerify(){
     phone: pending.phone,
     email: pending.email,
     password: pending.password,
-    workspaceId: genWorkspaceId(), // بياناته الخاصة دايمًا، حتى لو جاي من رابط دعوة
+    workspaceId: genWorkspaceId(),
     joinedWorkspaces: [],
-    verifiedAt: Date.now()
+    workspaceMembers: []
   };
-  users.push(newUser);
-  saveUsers(users);
-  // لو جاي من رابط دعوة (?invite=...)، enterApp هيضيفها كمجموعة منفصلة تلقائيًا من غير ما يمسح بياناته الخاصة
+  saveUsers([...users.filter(u => u.email !== newUser.email), newUser]);
   localStorage.removeItem(AUTH_PENDING_KEY);
   localStorage.setItem(AUTH_SESSION_KEY, newUser.email);
   enterApp(newUser);
-}
+};
 
-function submitLogin(){
-  const email = document.getElementById('login_email').value.trim().toLowerCase();
-  const password = document.getElementById('login_password').value;
-  const errEl = document.getElementById('loginError');
-  const user = getUsers().find(u => u.email === email && u.password === password);
-  if(!user){
-    errEl.textContent = 'الإيميل أو كلمة السر غلط.';
-    errEl.classList.add('show');
-    return;
-  }
-  errEl.classList.remove('show');
-  localStorage.setItem(AUTH_SESSION_KEY, user.email);
-  enterApp(user);
-}
-
-function logoutUser(){
-  showConfirm('هيتم تسجيل خروجك من الجهاز ده. تأكيد؟').then(ok => {
+document.getElementById('logoutBtn').onclick = () => {
+  const msg = currentLang==='ar' ? 'تسجلي خروج من الجهاز ده؟' : 'Log out from this device?';
+  showConfirm(msg).then(ok => {
     if(!ok) return;
+    localStorage.removeItem(AUTH_SESSION_KEY);
     stopDataSync();
     currentUser = null;
-    localStorage.removeItem(AUTH_SESSION_KEY);
-    localStorage.removeItem(AUTH_PENDING_KEY);
-    document.getElementById('login_email').value = '';
-    document.getElementById('login_password').value = '';
-    initAuth();
+    document.getElementById('appRoot').style.display = 'none';
+    document.getElementById('authOverlay').classList.remove('hidden');
+    showStep('login');
   });
-}
-
-function initAuth(){
-  if(!usersLoaded) return; // لسه بيجيب بيانات المستخدمين من فايرستور
-  const sessionEmail = getSessionEmail();
-  if(sessionEmail){
-    const u = getUsers().find(u => u.email === sessionEmail);
-    if(u){ enterApp(u); return; }
-  }
-  const pending = getPendingReg();
-  if(pending){ showVerifyStep(pending); showAuthOverlay(); return; }
-  showLoginStep();
-  showAuthOverlay();
-}
-
-document.getElementById('registerForm').addEventListener('submit', e => { e.preventDefault(); submitRegister(); });
-document.getElementById('loginForm').addEventListener('submit', e => { e.preventDefault(); submitLogin(); });
-document.getElementById('verifySubmitBtn').onclick = submitVerify;
-document.getElementById('authBackLink').onclick = () => {
-  localStorage.removeItem(AUTH_PENDING_KEY);
-  showRegisterStep();
 };
-document.getElementById('goToLoginLink').onclick = showLoginStep;
-document.getElementById('goToRegisterLink').onclick = showRegisterStep;
-document.getElementById('logoutBtn').onclick = logoutUser;
-document.getElementById('verify_code').addEventListener('keydown', e => { if(e.key === 'Enter') submitVerify(); });
-document.getElementById('membersBtn').onclick = openMembersModal;
-document.getElementById('memberInviteBtn').onclick = inviteUserToWorkspace;
-document.getElementById('membersCloseBtn').onclick = closeMembersModal;
-document.getElementById('membersOverlay').onclick = (e) => { if(e.target.id==='membersOverlay') closeMembersModal(); };
-document.getElementById('memberPhoneInput').addEventListener('keydown', e => { if(e.key === 'Enter') inviteUserToWorkspace(); });
-
 </script>
 </body>
 </html>
