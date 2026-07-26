@@ -47,8 +47,25 @@
   .mono{ font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi: isolate; }
   .wrap{ max-width: 1080px; margin: 0 auto; }
 
-  /* Top Bar for Language Toggle */
-  .top-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+  /* Top Bar for User Info, Logout & Language Toggle */
+  .top-bar { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 14px; 
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .top-user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .top-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
   header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: 18px; flex-wrap:wrap; }
   .brand{ display:flex; align-items:center; gap:12px; }
@@ -95,6 +112,7 @@
   .tabs{ display:flex; gap:6px; flex-wrap:wrap; }
   .tab{ background: var(--panel); border:1px solid var(--line); color:var(--text-dim); font-size:12.5px; padding:8px 12px; border-radius:20px; cursor:pointer; font-family:inherit; font-weight:500; }
   .tab.active{ background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+  .filter-select{ background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px; }
 
   /* ---- cards ---- */
   .list{ display:flex; flex-direction:column; gap:12px; }
@@ -167,8 +185,8 @@
   .overlay{ position:fixed; inset:0; background: rgba(6,14,22,0.72); display:none; align-items:flex-start; justify-content:center; padding: 30px 16px; overflow-y:auto; z-index:50; }
   .overlay.open{ display:flex; }
   
-  /* Fixing Confirmation Overlay Z-Index to always show on top of everything else */
   #confirmOverlay { z-index: 3000 !important; }
+  #logoutWarnOverlay { z-index: 4000 !important; }
   #membersOverlay { z-index: 1000; }
 
   .modal{ background: var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; width:100%; max-width:660px; }
@@ -311,9 +329,19 @@
 </div>
 
 <div class="wrap" id="appRoot" style="display:none;">
-  <!-- TOP BAR for prominent language switcher -->
+  <!-- TOP BAR for user info, logout & language switcher -->
   <div class="top-bar">
-    <button class="btn btn-lang" id="langToggleBtn">English</button>
+    <div class="top-user-info">
+      <span id="currentUserName" style="color:var(--teal); font-weight:700; font-size:14px;"></span>
+      <span id="wsSwitcherWrap" style="display:none;">
+        <select id="wsSwitcher" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-family:inherit; font-size:12px; cursor:pointer;"></select>
+      </span>
+      <button class="btn-ghost btn" id="createGroupBtn" style="padding:5px 10px; font-size:12px;">+ مجموعة جديدة</button>
+    </div>
+    <div class="top-actions">
+      <button class="btn-ghost btn" id="logoutBtn" data-i18n="logoutBtn" style="padding:5px 12px; font-size:12px;">تسجيل خروج</button>
+      <button class="btn btn-lang" id="langToggleBtn" style="padding:5px 12px; font-size:12px;">English</button>
+    </div>
   </div>
 
   <header>
@@ -325,16 +353,11 @@
       </svg>
       <div>
         <h1 data-i18n="appTitle">سجل الشحنات</h1>
-        <p data-i18n="appSub">متابعة عمليات التصدير — شحن بحري</p>
+        <p data-i18n="appSub">متابعة عمليات التصدير</p>
       </div>
     </div>
     <div class="header-actions">
-      <span id="currentUserName" style="color:var(--text-dim); font-size:13px; align-self:center; margin-inline-end:4px;"></span>
-      <span id="wsSwitcherWrap" style="display:none; align-self:center;">
-        <select id="wsSwitcher" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-family:inherit; font-size:12.5px; cursor:pointer;"></select>
-      </span>
       <button class="btn-ghost btn" id="membersBtn" data-i18n="membersBtn">👥 أعضاء المجموعة</button>
-      <button class="btn-ghost btn" id="logoutBtn" data-i18n="logoutBtn">تسجيل خروج</button>
       <button class="btn-ghost btn" id="backupBtn">Backup</button>
       <button class="btn-ghost btn" id="restoreBtn">Restore</button>
       <button class="btn-ghost btn" id="exportBtn" data-i18n="exportBtn">Export to Excel</button>
@@ -355,11 +378,21 @@
     <div class="tabs" id="tabs"></div>
   </div>
   <div class="controls" id="advFilters">
-    <select id="filterClient" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
-    <select id="filterPort" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
-    <select id="filterVessel" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:10px 12px; font-family:inherit; font-size:13px;"></select>
-    <button class="tab" id="filterUcrBtn" data-i18n="hasUcr">عندهم UCR</button>
-    <button class="tab" id="filterAcidBtn" data-i18n="hasAcid">عندهم ACID</button>
+    <select id="filterClient" class="filter-select"></select>
+    <input id="filterPol" class="filter-select" list="portsFilterDatalist" placeholder="بحث ميناء الشحن (POL)" autocomplete="off">
+    <input id="filterPod" class="filter-select" list="portsFilterDatalist" placeholder="بحث ميناء الوصول (POD)" autocomplete="off">
+    <datalist id="portsFilterDatalist"></datalist>
+    <select id="filterVessel" class="filter-select"></select>
+    <select id="filterUcr" class="filter-select">
+      <option value="" data-i18n="ucrAll">الكل (UCR)</option>
+      <option value="yes" data-i18n="ucrYes">يوجد UCR</option>
+      <option value="no" data-i18n="ucrNo">لا يوجد UCR</option>
+    </select>
+    <select id="filterAcid" class="filter-select">
+      <option value="" data-i18n="acidAll">الكل (ACID)</option>
+      <option value="yes" data-i18n="acidYes">يوجد ACID</option>
+      <option value="no" data-i18n="acidNo">لا يوجد ACID</option>
+    </select>
   </div>
   <div class="search-hint" style="display:none;"></div>
 
@@ -380,9 +413,10 @@
       <div class="field"><label data-i18n="commodity">البضاعة (Commodity)</label><input id="f_commodity"></div>
 
       <div class="section-title" data-i18n="secShipping">تفاصيل الحاوية والشحن</div>
+      <div class="field"><label data-i18n="pol">ميناء الشحن (POL)</label><input id="f_pol" list="portsDatalist" placeholder="Alexandria" autocomplete="off"></div>
+      <div class="field"><label data-i18n="pod">ميناء الوصول (POD)</label><input id="f_pod" list="portsDatalist" placeholder="Jebel Ali" autocomplete="off"></div>
       <div class="field"><label>Booking No</label><input id="f_bookingNo" placeholder="Booking No"></div>
-      <div class="field"><label data-i18n="pol">ميناء الشحن (POL)</label><input id="f_pol" placeholder="Alexandria"></div>
-      <div class="field"><label data-i18n="pod">ميناء الوصول (POD)</label><input id="f_pod" placeholder="Jebel Ali"></div>
+      <datalist id="portsDatalist"></datalist>
       <div class="field full" id="containersField">
         <label data-i18n="containersLabel">الحاويات (الحجم / العدد / الأرقام)</label>
         <div id="containersList"></div>
@@ -469,6 +503,19 @@
   </div>
 </div>
 
+<!-- Auto Logout Warning Overlay (60 seconds warning) -->
+<div class="overlay" id="logoutWarnOverlay">
+  <div class="modal" style="max-width:400px; margin-top:120px; text-align:center;">
+    <h2 style="color:var(--amber); font-size:18px;" data-i18n="logoutWarnTitle">تنبيه تسجيل الخروج</h2>
+    <p style="font-size:14px; color:var(--text); margin:14px 0;" data-i18n="logoutWarnMsg">
+      سيتم تسجيل الخروج تلقائيًا بسبب عدم النشاط خلال <b id="logoutCountdown" style="color:var(--coral); font-size:18px;" class="mono">60</b> ثانية.
+    </p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn btn-primary" id="stayLoggedInBtn" data-i18n="stayLoggedInBtn">البقاء قيد الدخول</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="membersOverlay">
   <div class="modal" style="max-width:480px;">
     <h2 style="font-size:18px;" data-i18n="membersTitle">أعضاء المجموعة</h2>
@@ -509,7 +556,7 @@ let currentLang = localStorage.getItem('str_lang') || 'ar';
 const i18n = {
   ar: {
     appTitle: "سجل الشحنات",
-    appSub: "متابعة عمليات التصدير — شحن بحري",
+    appSub: "متابعة عمليات التصدير",
     membersBtn: "👥 أعضاء المجموعة",
     logoutBtn: "تسجيل خروج",
     exportBtn: "تصدير إلى Excel",
@@ -518,10 +565,15 @@ const i18n = {
     newBtn: "+ شحنة جديدة",
     searchPh: "بحث برقم الشحنة، العميل، الـ Consignee، رقم الـ BL، الحاوية، أو الـ UCR...",
     allClients: "كل العملاء",
-    allPorts: "كل الموانئ",
+    allPolPorts: "كل موانئ الشحن (POL)",
+    allPodPorts: "كل موانئ الوصول (POD)",
     allVessels: "كل المراكب",
-    hasUcr: "عندهم UCR",
-    hasAcid: "عندهم ACID",
+    ucrAll: "الكل (UCR)",
+    ucrYes: "يوجد UCR",
+    ucrNo: "لا يوجد UCR",
+    acidAll: "الكل (ACID)",
+    acidYes: "يوجد ACID",
+    acidNo: "لا يوجد ACID",
     totalShipments: "إجمالي الشحنات",
     inProgress: "قيد التنفيذ",
     urgentFollowup: "تحتاج متابعة عاجلة",
@@ -639,11 +691,14 @@ const i18n = {
     sharedWs: "مجموعة مشتركة",
     ownerLabel: "المالك",
     adminLabel: "أدمن",
-    memberLabel: "عضو"
+    memberLabel: "عضو",
+    logoutWarnTitle: "تنبيه تسجيل الخروج",
+    logoutWarnMsg: "سيتم تسجيل الخروج تلقائيًا بسبب عدم النشاط خلال <b id=\"logoutCountdown\" style=\"color:var(--coral); font-size:18px;\" class=\"mono\">60</b> ثانية.",
+    stayLoggedInBtn: "البقاء قيد الدخول"
   },
   en: {
     appTitle: "Shipment Tracker",
-    appSub: "Export Operations Tracking — Sea Freight",
+    appSub: "Export Operations Tracking",
     membersBtn: "👥 Team Members",
     logoutBtn: "Log Out",
     exportBtn: "Export to Excel",
@@ -652,10 +707,15 @@ const i18n = {
     newBtn: "+ New Shipment",
     searchPh: "Search BKG Ref, Client, Consignee, BL No, Container, UCR...",
     allClients: "All Clients",
-    allPorts: "All Ports",
+    allPolPorts: "All Ports of Loading (POL)",
+    allPodPorts: "All Ports of Discharge (POD)",
     allVessels: "All Vessels",
-    hasUcr: "Has UCR",
-    hasAcid: "Has ACID",
+    ucrAll: "All (UCR)",
+    ucrYes: "Has UCR",
+    ucrNo: "No UCR",
+    acidAll: "All (ACID)",
+    acidYes: "Has ACID",
+    acidNo: "No ACID",
     totalShipments: "Total Shipments",
     inProgress: "In Progress",
     urgentFollowup: "Urgent Follow-up",
@@ -773,7 +833,10 @@ const i18n = {
     sharedWs: "Shared Workspace",
     ownerLabel: "Owner",
     adminLabel: "Admin",
-    memberLabel: "Member"
+    memberLabel: "Member",
+    logoutWarnTitle: "Logout Warning",
+    logoutWarnMsg: "You will be logged out automatically due to inactivity in <b id=\"logoutCountdown\" style=\"color:var(--coral); font-size:18px;\" class=\"mono\">60</b> seconds.",
+    stayLoggedInBtn: "Stay Logged In"
   }
 };
 
@@ -833,14 +896,16 @@ function getPayLabel(k){
   return t('payPending');
 }
 
+const WORLD_PORTS = ["Alexandria","Damietta","Port Said","Ain Sokhna","Suez","Safaga","Adabiya","El Dekheila","Aden","Jeddah","King Abdullah Port","Dammam","Jubail","Yanbu","Duba","Jazan","Ras Al Khair","Dubai","Jebel Ali","Abu Dhabi","Khalifa Port","Sharjah","Fujairah","Khor Fakkan","Ajman","Doha","Hamad Port","Kuwait","Shuwaikh","Shuaiba","Manama","Khalifa Bin Salman Port","Muscat","Sohar","Salalah","Duqm","Beirut","Tripoli Lebanon","Latakia","Tartous","Aqaba","Haifa","Ashdod","Eilat","Istanbul","Ambarli","Mersin","Izmir","Iskenderun","Gebze","Piraeus","Thessaloniki","Constanta","Varna","Burgas","Odessa","Novorossiysk","Sochi","Genoa","La Spezia","Livorno","Naples","Gioia Tauro","Trieste","Venice","Salerno","Ravenna","Taranto","Palermo","Cagliari","Barcelona","Valencia","Algeciras","Bilbao","Las Palmas","Tarragona","Cartagena Spain","Vigo","Marseille","Le Havre","Fos-sur-Mer","Dunkirk","Bordeaux","Nantes Saint-Nazaire","Lisbon","Sines","Leixoes","Setubal","Rotterdam","Amsterdam","Antwerp","Zeebrugge","Ghent","Hamburg","Bremerhaven","Wilhelmshaven","Felixstowe","Southampton","London Gateway","Liverpool","Tilbury","Immingham","Grangemouth","Dublin","Cork","Gothenburg","Stockholm","Malmo","Helsingborg","Oslo","Bergen","Copenhagen","Aarhus","Gdansk","Gdynia","Szczecin","Klaipeda","Riga","Tallinn","St Petersburg","Kaliningrad","Casablanca","Tangier Med","Agadir","Algiers","Oran","Skikda","Tunis","Sfax","Tripoli Libya","Benghazi","Misurata","Lagos","Apapa","Tin Can Island","Port Harcourt","Onne","Tema","Takoradi","Abidjan","San Pedro","Dakar","Conakry","Freetown","Monrovia","Lome","Cotonou","Douala","Libreville","Pointe Noire","Luanda","Lobito","Walvis Bay","Cape Town","Durban","Ngqura","Port Elizabeth","Richards Bay","Maputo","Beira","Dar es Salaam","Mombasa","Djibouti","Berbera","Port Sudan","Karachi","Port Qasim","Gwadar","Mumbai","Jawaharlal Nehru Port","Chennai","Kolkata","Kandla","Mundra","Cochin","Visakhapatnam","Tuticorin","Paradip","Colombo","Hambantota","Chittagong","Chalna","Yangon","Bangkok","Laem Chabang","Ho Chi Minh City","Hai Phong","Da Nang","Cai Mep","Phnom Penh","Sihanoukville","Singapore","Port Klang","Tanjung Pelepas","Penang","Kuantan","Jakarta","Tanjung Priok","Surabaya","Belawan","Manila","Cebu","Batangas","Kaohsiung","Keelung","Taichung","Hong Kong","Shenzhen","Shanghai","Ningbo Zhoushan","Qingdao","Tianjin","Guangzhou","Xiamen","Dalian","Yingkou","Lianyungang","Fuzhou","Busan","Incheon","Gwangyang","Ulsan","Tokyo","Yokohama","Kobe","Osaka","Nagoya","Hakata","Shimizu","Sydney","Melbourne","Brisbane","Fremantle","Adelaide","Port Botany","Newcastle Australia","Auckland","Tauranga","Wellington","Vancouver","Prince Rupert","Montreal","Halifax","Toronto","New York New Jersey","Savannah","Charleston","Houston","Los Angeles","Long Beach","Oakland","Seattle","Tacoma","Miami","Jacksonville","Norfolk","Baltimore","Boston","New Orleans","Mobile","Tampa","Philadelphia","Veracruz","Manzanillo Mexico","Lazaro Cardenas","Altamira","Balboa","Colon","Cartagena Colombia","Buenaventura","Guayaquil","Callao","Santos","Paranagua","Rio de Janeiro","Itajai","Rio Grande","Buenos Aires","Montevideo","Valparaiso","San Antonio Chile","Puerto Cabello","La Guaira","Kingston Jamaica","Freeport Bahamas","Port of Spain"];
 let shipments = [];
 let activeFilter = 'all';
 let editingId = null;
 let filterClient = '';
-let filterPort = '';
+let filterPol = '';
+let filterPod = '';
 let filterVessel = '';
-let filterHasUcr = false;
-let filterHasAcid = false;
+let filterUcr = '';
+let filterAcid = '';
 
 function uid(){ return 'sh_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 function genWorkspaceId(){ return 'ws_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
@@ -1052,15 +1117,31 @@ function fillFilterSelect(sel, values, current, allLabel){
   sel.innerHTML = '<option value="">' + allLabel + '</option>' +
     values.map(v => `<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
 }
+function allKnownPorts(){
+  const used = shipments.flatMap(s => [s.pol, s.pod]).filter(Boolean);
+  return [...new Set([...WORLD_PORTS, ...used])].sort((a,b)=>a.localeCompare(b, currentLang==='ar'?'ar':'en'));
+}
+function fillPortsDatalists(){
+  const ports = allKnownPorts();
+  const optionsHtml = ports.map(v => `<option value="${v}">`).join('');
+  const dl1 = document.getElementById('portsDatalist');
+  const dl2 = document.getElementById('portsFilterDatalist');
+  if(dl1) dl1.innerHTML = optionsHtml;
+  if(dl2) dl2.innerHTML = optionsHtml;
+}
 function renderAdvFilters(){
   const clients = [...new Set(shipments.map(s=>s.client).filter(Boolean))].sort((a,b)=>a.localeCompare(b, currentLang==='ar'?'ar':'en'));
-  const ports = [...new Set(shipments.flatMap(s=>[s.pol,s.pod]).filter(Boolean))].sort((a,b)=>a.localeCompare(b, currentLang==='ar'?'ar':'en'));
   const vessels = [...new Set(shipments.map(s=>s.carrier).filter(Boolean))].sort((a,b)=>a.localeCompare(b, currentLang==='ar'?'ar':'en'));
+
   fillFilterSelect(document.getElementById('filterClient'), clients, filterClient, t('allClients'));
-  fillFilterSelect(document.getElementById('filterPort'), ports, filterPort, t('allPorts'));
   fillFilterSelect(document.getElementById('filterVessel'), vessels, filterVessel, t('allVessels'));
-  document.getElementById('filterUcrBtn').classList.toggle('active', filterHasUcr);
-  document.getElementById('filterAcidBtn').classList.toggle('active', filterHasAcid);
+  fillPortsDatalists();
+  const filterPolEl = document.getElementById('filterPol');
+  const filterPodEl = document.getElementById('filterPod');
+  if(document.activeElement !== filterPolEl) filterPolEl.value = filterPol;
+  if(document.activeElement !== filterPodEl) filterPodEl.value = filterPod;
+  document.getElementById('filterUcr').value = filterUcr;
+  document.getElementById('filterAcid').value = filterAcid;
 }
 
 function render(){
@@ -1076,14 +1157,24 @@ function render(){
     return true;
   }).filter(s => {
     if(filterClient && s.client !== filterClient) return false;
-    if(filterPort && s.pol !== filterPort && s.pod !== filterPort) return false;
+    if(filterPol && !(s.pol || '').toLowerCase().includes(filterPol.toLowerCase())) return false;
+    if(filterPod && !(s.pod || '').toLowerCase().includes(filterPod.toLowerCase())) return false;
     if(filterVessel && s.carrier !== filterVessel) return false;
-    if(filterHasUcr && !(s.ucrNumber && s.ucrNumber.trim())) return false;
-    if(filterHasAcid && !(s.aciNumber && s.aciNumber.trim())) return false;
+    
+    // UCR Filter Check (Yes/No)
+    const hasUcr = !!(s.ucrNumber && s.ucrNumber.trim());
+    if(filterUcr === 'yes' && !hasUcr) return false;
+    if(filterUcr === 'no' && hasUcr) return false;
+
+    // ACID Filter Check (Yes/No)
+    const hasAcid = !!(s.aciNumber && s.aciNumber.trim());
+    if(filterAcid === 'yes' && !hasAcid) return false;
+    if(filterAcid === 'no' && hasAcid) return false;
+
     return true;
   }).filter(s => {
     if(!q) return true;
-    const fields = [s.ref, s.bookingNo, s.client, s.consignee, s.bl, s.container, s.ucrNumber];
+    const fields = [s.ref, s.bookingNo, s.client, s.consignee, s.bl, s.container, s.ucrNumber, s.aciNumber];
     return fields.some(f => (f||'').toLowerCase().includes(q));
   });
   items.sort((a,b)=>{
@@ -1442,10 +1533,11 @@ document.getElementById('saveBtn').onclick = saveShipment;
 document.getElementById('overlay').onclick = (e) => { if(e.target.id==='overlay') closeModal(); };
 document.getElementById('searchInput').oninput = render;
 document.getElementById('filterClient').onchange = e => { filterClient = e.target.value; render(); };
-document.getElementById('filterPort').onchange = e => { filterPort = e.target.value; render(); };
+document.getElementById('filterPol').oninput = e => { filterPol = e.target.value; render(); };
+document.getElementById('filterPod').oninput = e => { filterPod = e.target.value; render(); };
 document.getElementById('filterVessel').onchange = e => { filterVessel = e.target.value; render(); };
-document.getElementById('filterUcrBtn').onclick = () => { filterHasUcr = !filterHasUcr; render(); };
-document.getElementById('filterAcidBtn').onclick = () => { filterHasAcid = !filterHasAcid; render(); };
+document.getElementById('filterUcr').onchange = e => { filterUcr = e.target.value; render(); };
+document.getElementById('filterAcid').onchange = e => { filterAcid = e.target.value; render(); };
 document.getElementById('exportBtn').onclick = exportToExcel;
 document.getElementById('backupBtn').onclick = backupData;
 document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreInput').click();
@@ -1461,6 +1553,80 @@ document.getElementById('resetBtn').onclick = () => {
     saveData();
     render();
   });
+};
+
+/* ============ AUTO LOGOUT & INACTIVITY SYSTEM ============ */
+const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 Minutes total inactivity
+const WARNING_LIMIT_MS = 60 * 1000; // Warning screen pops up 60 seconds before logout
+
+let inactivityTimer = null;
+let warningCountdownTimer = null;
+let countdownVal = 60;
+
+function resetInactivityTimers(){
+  if(!currentUser) return;
+  
+  clearTimeout(inactivityTimer);
+  clearInterval(warningCountdownTimer);
+  
+  const warnOverlay = document.getElementById('logoutWarnOverlay');
+  if(warnOverlay) warnOverlay.classList.remove('open');
+  
+  inactivityTimer = setTimeout(() => {
+    startLogoutWarning();
+  }, INACTIVITY_LIMIT_MS - WARNING_LIMIT_MS);
+}
+
+function startLogoutWarning(){
+  countdownVal = 60;
+  const countEl = document.getElementById('logoutCountdown');
+  if(countEl) countEl.textContent = countdownVal;
+  
+  const warnOverlay = document.getElementById('logoutWarnOverlay');
+  if(warnOverlay) warnOverlay.classList.add('open');
+
+  clearInterval(warningCountdownTimer);
+  warningCountdownTimer = setInterval(() => {
+    countdownVal--;
+    if(countEl) countEl.textContent = countdownVal;
+    if(countdownVal <= 0){
+      clearInterval(warningCountdownTimer);
+      performLogout();
+    }
+  }, 1000);
+}
+
+function performLogout(){
+  clearTimeout(inactivityTimer);
+  clearInterval(warningCountdownTimer);
+  const warnOverlay = document.getElementById('logoutWarnOverlay');
+  if(warnOverlay) warnOverlay.classList.remove('open');
+  
+  localStorage.removeItem(AUTH_SESSION_KEY);
+  currentUser = null;
+  activeWorkspaceId = null;
+  stopDataSync();
+  
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('authOverlay').classList.remove('hidden');
+  initAuth();
+}
+
+// User activity listeners
+['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    const warnOverlay = document.getElementById('logoutWarnOverlay');
+    if(currentUser && warnOverlay && !warnOverlay.classList.contains('open')){
+      resetInactivityTimers();
+    }
+  }, { passive: true });
+});
+
+document.getElementById('stayLoggedInBtn').onclick = () => {
+  resetInactivityTimers();
+};
+document.getElementById('logoutBtn').onclick = () => {
+  performLogout();
 };
 
 /* ============ AUTH ============ */
@@ -1503,15 +1669,19 @@ function getSessionEmail(){
 function showApp(){
   document.getElementById('authOverlay').classList.add('hidden');
   document.getElementById('appRoot').style.display = '';
+  resetInactivityTimers();
 }
 let currentUser = null;
 let activeWorkspaceId = null;
 
 function ensureUserShape(user){
   let changed = false;
-  if(!user.workspaceId){ user.workspaceId = genWorkspaceId(); changed = true; }
+  if(!Array.isArray(user.ownedWorkspaces)){
+    const legacyId = user.workspaceId || genWorkspaceId();
+    user.ownedWorkspaces = [{ id: legacyId, label: t('myPrivateWs'), members: Array.isArray(user.workspaceMembers) ? user.workspaceMembers : [] }];
+    changed = true;
+  }
   if(!Array.isArray(user.joinedWorkspaces)){ user.joinedWorkspaces = []; changed = true; }
-  if(!Array.isArray(user.workspaceMembers)){ user.workspaceMembers = []; changed = true; }
   return { user, changed };
 }
 function persistUser(user){
@@ -1521,9 +1691,8 @@ function persistUser(user){
 function renderWorkspaceSwitcher(user){
   const wrap = document.getElementById('wsSwitcherWrap');
   const select = document.getElementById('wsSwitcher');
-  const allWs = [{ id: user.workspaceId, label: t('myPrivateWs') }, ...user.joinedWorkspaces];
-  if(allWs.length <= 1){ wrap.style.display = 'none'; return; }
-  wrap.style.display = '';
+  const allWs = [...user.ownedWorkspaces.map(w => ({ id: w.id, label: w.label })), ...user.joinedWorkspaces];
+  wrap.style.display = allWs.length <= 1 ? 'none' : '';
   select.innerHTML = allWs.map(w => '<option value="' + w.id + '"' + (w.id === activeWorkspaceId ? ' selected' : '') + '>' + w.label + '</option>').join('');
 }
 function switchWorkspace(wsId){
@@ -1532,6 +1701,21 @@ function switchWorkspace(wsId){
   localStorage.setItem('str_active_ws_' + currentUser.email, wsId);
   loadData(wsId);
 }
+function createNewGroup(){
+  if(!currentUser) return;
+  const name = prompt(currentLang==='ar' ? 'اسم المجموعة الجديدة:' : 'New group name:');
+  if(!name || !name.trim()) return;
+  const newWs = { id: genWorkspaceId(), label: name.trim(), members: [] };
+  const updatedUser = { ...currentUser, ownedWorkspaces: [...currentUser.ownedWorkspaces, newWs] };
+  const users = getUsers().map(u => u.email === currentUser.email ? updatedUser : u);
+  saveUsers(users);
+  currentUser = updatedUser;
+  activeWorkspaceId = newWs.id;
+  localStorage.setItem('str_active_ws_' + currentUser.email, activeWorkspaceId);
+  renderWorkspaceSwitcher(currentUser);
+  loadData(activeWorkspaceId);
+}
+document.getElementById('createGroupBtn').onclick = createNewGroup;
 function enterApp(user){
   const migrated = ensureUserShape(user);
   user = migrated.user;
@@ -1540,21 +1724,22 @@ function enterApp(user){
   currentUser = user;
   document.getElementById('currentUserName').textContent = user.firstName + ' ' + user.lastName;
 
+  const ownedIds = user.ownedWorkspaces.map(w => w.id);
   const seenKey = 'str_seen_ws_' + user.email;
   let seen = [];
   try{ seen = JSON.parse(localStorage.getItem(seenKey)) || []; }catch(e){ seen = []; }
   const newGroup = user.joinedWorkspaces.find(w => !seen.includes(w.id));
-  localStorage.setItem(seenKey, JSON.stringify([user.workspaceId, ...user.joinedWorkspaces.map(w => w.id)]));
+  localStorage.setItem(seenKey, JSON.stringify([...ownedIds, ...user.joinedWorkspaces.map(w => w.id)]));
 
   const savedActive = localStorage.getItem('str_active_ws_' + user.email);
-  const validIds = [user.workspaceId, ...user.joinedWorkspaces.map(w => w.id)];
+  const validIds = [...ownedIds, ...user.joinedWorkspaces.map(w => w.id)];
   if(newGroup){
     activeWorkspaceId = newGroup.id;
     localStorage.setItem('str_active_ws_' + user.email, newGroup.id);
   } else if(savedActive && validIds.includes(savedActive)){
     activeWorkspaceId = savedActive;
   } else {
-    activeWorkspaceId = user.workspaceId;
+    activeWorkspaceId = ownedIds[0];
   }
 
   renderWorkspaceSwitcher(user);
@@ -1564,18 +1749,24 @@ function enterApp(user){
 document.getElementById('wsSwitcher').addEventListener('change', e => switchWorkspace(e.target.value));
 
 /* ---- أعضاء المجموعة والصلاحيات ---- */
-function getWorkspaceOwner(wsId, usersList){
+function getMyOwnedWorkspace(wsId){
   if(!currentUser) return null;
-  if(wsId === currentUser.workspaceId) return currentUser;
+  return (currentUser.ownedWorkspaces || []).find(w => w.id === wsId) || null;
+}
+function findWorkspaceOwnerAndWs(wsId, usersList){
   const users = usersList || getUsers();
-  return users.find(u => u.workspaceId === wsId) || null;
+  for(const u of users){
+    const ws = (u.ownedWorkspaces || []).find(w => w.id === wsId);
+    if(ws) return { owner: u, ws };
+  }
+  return null;
 }
 function getMyRoleFor(wsId){
   if(!currentUser) return null;
-  if(wsId === currentUser.workspaceId) return 'owner';
-  const owner = getWorkspaceOwner(wsId);
-  if(!owner) return null;
-  const m = (owner.workspaceMembers || []).find(x => x.email === currentUser.email);
+  if(getMyOwnedWorkspace(wsId)) return 'owner';
+  const found = findWorkspaceOwnerAndWs(wsId);
+  if(!found) return null;
+  const m = (found.ws.members || []).find(x => x.email === currentUser.email);
   return m ? (m.role || 'member') : null;
 }
 function canManageMembers(wsId){
@@ -1595,19 +1786,20 @@ function inviteUserToWorkspace(){
     alert(currentLang==='ar'?'مفيش حساب مسجل بالرقم ده.':'No user registered with this phone number.');
     return;
   }
-  const owner = getWorkspaceOwner(wsId, users);
-  if(!owner) return;
+  const found = findWorkspaceOwnerAndWs(wsId, users);
+  if(!found) return;
+  const { owner, ws } = found;
   if(target.email === owner.email){ alert(currentLang==='ar'?'ده رقم موبايل صاحب المجموعة نفسه.':'This is owner\'s phone.'); return; }
-  const alreadyMember = (owner.workspaceMembers || []).some(m => m.email === target.email);
+  const alreadyMember = (ws.members || []).some(m => m.email === target.email);
   if(alreadyMember){ alert(target.firstName + ' ' + target.lastName + ' member already.'); return; }
   const targetJoined = Array.isArray(target.joinedWorkspaces) ? target.joinedWorkspaces : [];
   const updatedTarget = {
     ...target,
-    joinedWorkspaces: [...targetJoined, { id: wsId, label: (currentLang==='ar'?'مجموعة ':'Group ') + owner.firstName + ' ' + owner.lastName }]
+    joinedWorkspaces: [...targetJoined, { id: wsId, label: ws.label || ((currentLang==='ar'?'مجموعة ':'Group ') + owner.firstName + ' ' + owner.lastName) }]
   };
   const updatedOwner = {
     ...owner,
-    workspaceMembers: [...(owner.workspaceMembers || []), { email: target.email, firstName: target.firstName, lastName: target.lastName, phone: target.phone, role: 'member' }]
+    ownedWorkspaces: owner.ownedWorkspaces.map(w => w.id === wsId ? { ...w, members: [...(w.members || []), { email: target.email, firstName: target.firstName, lastName: target.lastName, phone: target.phone, role: 'member' }] } : w)
   };
   const newUsers = users.map(u => {
     if(u.email === target.email) return updatedTarget;
@@ -1628,9 +1820,10 @@ function removeMemberFromWorkspace(email){
   showConfirm(msg).then(ok => {
     if(!ok) return;
     const users = getUsers();
-    const owner = getWorkspaceOwner(wsId, users);
-    if(!owner) return;
-    const updatedOwner = { ...owner, workspaceMembers: (owner.workspaceMembers || []).filter(m => m.email !== email) };
+    const found = findWorkspaceOwnerAndWs(wsId, users);
+    if(!found) return;
+    const { owner } = found;
+    const updatedOwner = { ...owner, ownedWorkspaces: owner.ownedWorkspaces.map(w => w.id === wsId ? { ...w, members: (w.members || []).filter(m => m.email !== email) } : w) };
     const newUsers = users.map(u => {
       if(u.email === owner.email) return updatedOwner;
       if(u.email === email) return { ...u, joinedWorkspaces: (u.joinedWorkspaces || []).filter(w => w.id !== wsId) };
@@ -1638,221 +1831,250 @@ function removeMemberFromWorkspace(email){
     });
     saveUsers(newUsers);
     if(currentUser.email === owner.email) currentUser = updatedOwner;
-    if(currentUser.email === email){
-      closeMembersModal();
-      switchWorkspace(currentUser.workspaceId);
-      return;
-    }
     renderMembersList();
   });
 }
 
-function leaveCurrentGroup(){
+function leaveCurrentWorkspace(){
   if(!currentUser) return;
   const wsId = activeWorkspaceId;
-  if(wsId === currentUser.workspaceId){
-    alert(currentLang==='ar'?'دي مجموعتك الخاصة، ما ينفعش تغادرها!':'This is your own workspace, you cannot leave it!');
-    return;
-  }
-  const msg = currentLang==='ar'?'هل أنت تأكد من مغادرة هذه المجموعة؟':'Are you sure you want to leave this group?';
+  if(getMyOwnedWorkspace(wsId)){ alert(currentLang==='ar'?'ما ينفعش تسيب مجموعة انت صاحبها.':'Cannot leave a group you own.'); return; }
+  const msg = currentLang==='ar'?'تسيب المجموعة دي؟':'Leave this group?';
   showConfirm(msg).then(ok => {
     if(!ok) return;
     const users = getUsers();
-    const owner = getWorkspaceOwner(wsId, users);
-
-    const updatedJoined = (currentUser.joinedWorkspaces || []).filter(w => w.id !== wsId);
-    const updatedUser = { ...currentUser, joinedWorkspaces: updatedJoined };
-
-    let updatedOwner = owner;
-    if(owner){
-      const updatedMembers = (owner.workspaceMembers || []).filter(m => m.email !== currentUser.email);
-      updatedOwner = { ...owner, workspaceMembers: updatedMembers };
+    const found = findWorkspaceOwnerAndWs(wsId, users);
+    const updatedUser = { ...currentUser, joinedWorkspaces: (currentUser.joinedWorkspaces || []).filter(w => w.id !== wsId) };
+    let newUsers = users.map(u => u.email === currentUser.email ? updatedUser : u);
+    if(found){
+      const { owner } = found;
+      const updatedOwner = { ...owner, ownedWorkspaces: owner.ownedWorkspaces.map(w => w.id === wsId ? { ...w, members: (w.members || []).filter(m => m.email !== currentUser.email) } : w) };
+      newUsers = newUsers.map(u => u.email === owner.email ? updatedOwner : u);
     }
-
-    const newUsers = users.map(u => {
-      if(u.email === currentUser.email) return updatedUser;
-      if(owner && u.email === owner.email) return updatedOwner;
-      return u;
-    });
     saveUsers(newUsers);
-
     currentUser = updatedUser;
-    closeMembersModal();
-    switchWorkspace(currentUser.workspaceId);
+    activeWorkspaceId = currentUser.ownedWorkspaces[0].id;
+    localStorage.setItem('str_active_ws_' + currentUser.email, activeWorkspaceId);
+    document.getElementById('membersOverlay').classList.remove('open');
+    renderWorkspaceSwitcher(currentUser);
+    loadData(activeWorkspaceId);
   });
 }
 
 function renderMembersList(){
   const wsId = activeWorkspaceId;
-  const owner = getWorkspaceOwner(wsId);
+  const users = getUsers();
+  const found = findWorkspaceOwnerAndWs(wsId, users);
   const listEl = document.getElementById('membersList');
   const inviteRow = document.getElementById('membersInviteRow');
   const leaveRow = document.getElementById('leaveGroupRow');
 
-  if(!owner){ listEl.innerHTML = ''; inviteRow.style.display = 'none'; leaveRow.style.display = 'none'; return; }
-  const manage = canManageMembers(wsId);
-  inviteRow.style.display = manage ? 'flex' : 'none';
+  if(canManageMembers(wsId)){ inviteRow.style.display = 'flex'; } else { inviteRow.style.display = 'none'; }
+  leaveRow.style.display = getMyOwnedWorkspace(wsId) ? 'none' : 'block';
 
-  const isOwner = currentUser && (wsId === currentUser.workspaceId);
-  leaveRow.style.display = isOwner ? 'none' : 'block';
+  if(!found){ listEl.innerHTML = '<p style="color:var(--text-dim); font-size:13px;">—</p>'; return; }
+  const { owner, ws } = found;
 
-  const members = Array.isArray(owner.workspaceMembers) ? owner.workspaceMembers : [];
-  const rows = [{ email: owner.email, firstName: owner.firstName, lastName: owner.lastName, phone: owner.phone, role: 'owner' }, ...members];
-  listEl.innerHTML = rows.map(m => {
-    const roleLabel = m.role === 'owner' ? t('ownerLabel') : (m.role === 'admin' ? t('adminLabel') : t('memberLabel'));
-    const isMe = currentUser && m.email === currentUser.email;
-    let actions = '';
-    if(manage && m.role !== 'owner'){
-      actions += `<button class="btn-ghost btn danger" data-removemember="${m.email}" style="font-size:11px; padding:5px 8px;">حذف</button>`;
-    }
-    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap;">
+  let rows = [];
+  rows.push({ email: owner.email, name: owner.firstName + ' ' + owner.lastName, phone: owner.phone, role: 'owner' });
+  (ws.members || []).forEach(m => {
+    rows.push({ email: m.email, name: m.firstName + ' ' + m.lastName, phone: m.phone, role: m.role || 'member' });
+  });
+
+  const roleLabel = r => r==='owner'?t('ownerLabel'):(r==='admin'?t('adminLabel'):t('memberLabel'));
+
+  listEl.innerHTML = rows.map(r => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:var(--ink); border:1px solid var(--line); border-radius:10px; margin-bottom:8px;">
       <div>
-        <div style="font-weight:600; font-size:14px;">${m.firstName || ''} ${m.lastName || ''} ${isMe ? '(أنت)' : ''}</div>
-        <div class="mono" style="font-size:11.5px; color:var(--text-dim);">${m.phone || ''}</div>
+        <div style="font-weight:700; font-size:14px; color:var(--text);">${r.name} ${r.email===currentUser.email ? '<span style="color:var(--teal); font-size:11px;">(أنت)</span>' : ''}</div>
+        <div class="mono" style="font-size:12px; color:var(--text-dim);">${r.phone || r.email}</div>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
-        <span class="badge" style="background:var(--panel-2); color:var(--teal); font-size:11px;">${roleLabel}</span>
-        ${actions}
+        <span class="badge" style="background:var(--panel-2); color:var(--amber); border:1px solid var(--line);">${roleLabel(r.role)}</span>
+        ${(canManageMembers(wsId) && r.role!=='owner' && r.email!==currentUser.email) ? `<button class="icon-btn del" data-remove-member="${r.email}" title="حذف العضو">✕</button>` : ''}
       </div>
-    </div>`;
-  }).join('');
+    </div>
+  `).join('');
 
-  listEl.querySelectorAll('[data-removemember]').forEach(b => {
-    b.onclick = () => removeMemberFromWorkspace(b.dataset.removemember);
+  listEl.querySelectorAll('[data-remove-member]').forEach(btn => {
+    btn.onclick = () => removeMemberFromWorkspace(btn.dataset.removeMember);
   });
 }
 
-function openMembersModal(){
+document.getElementById('membersBtn').onclick = () => {
   renderMembersList();
   document.getElementById('membersOverlay').classList.add('open');
-}
-function closeMembersModal(){
-  document.getElementById('membersOverlay').classList.remove('open');
-}
-
-document.getElementById('membersBtn').onclick = openMembersModal;
-document.getElementById('membersCloseBtn').onclick = closeMembersModal;
+};
+document.getElementById('membersCloseBtn').onclick = () => document.getElementById('membersOverlay').classList.remove('open');
+document.getElementById('membersOverlay').onclick = e => { if(e.target.id==='membersOverlay') document.getElementById('membersOverlay').classList.remove('open'); };
 document.getElementById('memberInviteBtn').onclick = inviteUserToWorkspace;
-document.getElementById('leaveGroupBtn').onclick = leaveCurrentGroup;
+document.getElementById('leaveGroupBtn').onclick = leaveCurrentWorkspace;
 
-/* AUTH UI Logic */
+/* ---- Authentication Flow ---- */
 function showStep(stepName){
-  document.getElementById('authStepRegister').style.display = stepName === 'register' ? 'block' : 'none';
-  document.getElementById('authStepVerify').style.display = stepName === 'verify' ? 'block' : 'none';
-  document.getElementById('authStepLogin').style.display = stepName === 'login' ? 'block' : 'none';
+  document.getElementById('authStepRegister').style.display = stepName==='register' ? 'block' : 'none';
+  document.getElementById('authStepVerify').style.display = stepName==='verify' ? 'block' : 'none';
+  document.getElementById('authStepLogin').style.display = stepName==='login' ? 'block' : 'none';
 }
 
 function initAuth(){
-  const sess = getSessionEmail();
+  const sessionEmail = getSessionEmail();
   const users = getUsers();
-  if(sess){
-    const u = users.find(x => x.email === sess);
+  if(sessionEmail){
+    const u = users.find(x => x.email === sessionEmail);
     if(u){ enterApp(u); return; }
   }
   const pending = getPendingReg();
   if(pending){
     showStep('verify');
-  } else if(users.length > 0){
-    showStep('login');
   } else {
-    showStep('register');
+    showStep('login');
   }
 }
 
-document.getElementById('goToLoginLink').onclick = () => showStep('login');
-document.getElementById('goToRegisterLink').onclick = () => showStep('register');
-document.getElementById('authBackLink').onclick = () => {
-  localStorage.removeItem(AUTH_PENDING_KEY);
-  showStep('register');
-};
+// Show error messages
+function showAuthError(elementId, msg){
+  const el = document.getElementById(elementId);
+  if(!el) return;
+  if(msg){ el.textContent = msg; el.classList.add('show'); }
+  else { el.textContent = ''; el.classList.remove('show'); }
+}
 
-/* Login Handler - Phone or Email */
-document.getElementById('loginForm').onsubmit = (e) => {
-  e.preventDefault();
-  const identity = document.getElementById('login_identity').value.trim();
-  const pass = document.getElementById('login_password').value.trim();
-  const errEl = document.getElementById('loginError');
-  errEl.classList.remove('show');
-
-  const users = getUsers();
-  // Check against either email OR phone
-  const u = users.find(x => (x.email.toLowerCase() === identity.toLowerCase() || x.phone === identity) && x.password === pass);
-  if(!u){
-    errEl.textContent = currentLang === 'ar' ? 'الإيميل/رقم الموبايل أو كلمة السر غير صحيحة.' : 'Invalid Email/Phone or password.';
-    errEl.classList.add('show');
-    return;
-  }
-  localStorage.setItem(AUTH_SESSION_KEY, u.email);
-  enterApp(u);
-};
-
-/* Register Handler */
+// Register Form Submit
 document.getElementById('registerForm').onsubmit = (e) => {
   e.preventDefault();
-  const fn = document.getElementById('reg_firstName').value.trim();
-  const ln = document.getElementById('reg_lastName').value.trim();
+  showAuthError('registerError', '');
+
+  const firstName = document.getElementById('reg_firstName').value.trim();
+  const lastName = document.getElementById('reg_lastName').value.trim();
   const phone = document.getElementById('reg_phone').value.trim();
   const email = document.getElementById('reg_email').value.trim().toLowerCase();
-  const pass = document.getElementById('reg_password').value.trim();
-  const pass2 = document.getElementById('reg_password2').value.trim();
-  const errEl = document.getElementById('registerError');
-  errEl.classList.remove('show');
+  const p1 = document.getElementById('reg_password').value;
+  const p2 = document.getElementById('reg_password2').value;
 
-  if(!fn || !ln || !phone || !email || !pass){
-    errEl.textContent = currentLang === 'ar' ? 'من فضلك املا كل الحقول.' : 'Please fill all fields.';
-    errEl.classList.add('show'); return;
+  if(!firstName || !lastName || !phone || !email || !p1){
+    showAuthError('registerError', currentLang==='ar'?'الرجاء ملء كل الحقول.':'Please fill all fields.');
+    return;
   }
-  if(pass !== pass2){
-    errEl.textContent = currentLang === 'ar' ? 'كلمات السر غير متطابقة.' : 'Passwords do not match.';
-    errEl.classList.add('show'); return;
+  if(p1 !== p2){
+    showAuthError('registerError', currentLang==='ar'?'كلمتا السر غير متطابقتين.':'Passwords do not match.');
+    return;
+  }
+  if(p1.length < 6){
+    showAuthError('registerError', currentLang==='ar'?'كلمة السر يجب أن تكون ٦ خانات على الأقل.':'Password must be at least 6 characters.');
+    return;
+  }
+
+  const existing = getUsers().find(u => u.email === email || u.phone === phone);
+  if(existing){
+    showAuthError('registerError', currentLang==='ar'?'يوجد حساب مسجل بهذا الإيميل أو رقم الموبايل بالفعل.':'An account already exists with this email or phone.');
+    return;
   }
 
   const code = genCode();
-  const pending = { firstName: fn, lastName: ln, phone, email, password: pass, code, createdAt: Date.now() };
-  localStorage.setItem(AUTH_PENDING_KEY, JSON.stringify(pending));
+  const pendingData = { firstName, lastName, phone, email, password: p1, code, createdAt: Date.now() };
+  localStorage.setItem(AUTH_PENDING_KEY, JSON.stringify(pendingData));
+
+  // Send Web3Forms Notification to Owner
+  fetch('https://api.web3forms.com/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      access_key: WEB3FORMS_ACCESS_KEY,
+      subject: `طلب تفعيل حساب جديد: ${firstName} ${lastName}`,
+      from_name: 'سجل الشحنات System',
+      to_email: OWNER_EMAIL,
+      message: `طلب تفعيل حساب جديد:\nالاسم: ${firstName} ${lastName}\nالموبايل: ${phone}\nالإيميل: ${email}\nالكود المولّد: ${code}`
+    })
+  }).catch(err => console.error('web3forms error', err));
+
   showStep('verify');
 };
 
-/* Verify Handler */
-document.getElementById('verifySubmitBtn').onclick = () => {
-  const pending = getPendingReg();
-  const codeVal = document.getElementById('verify_code').value.trim();
-  const errEl = document.getElementById('verifyError');
-  errEl.classList.remove('show');
+// Request Buttons (WhatsApp & Email)
+document.getElementById('authEmailBtn').onclick = () => {
+  const p = getPendingReg();
+  if(!p) return;
+  const body = encodeURIComponent(`مرحبًا، أريد طلب كود تفعيل حسابي في سجل الشحنات.\n\nالاسم: ${p.firstName} ${p.lastName}\nالموبايل: ${p.phone}\nالإيميل: ${p.email}`);
+  const mailto = `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('طلب كود تفعيل - سجل الشحنات')}&body=${body}`;
+  window.open(mailto, '_blank');
+};
 
-  if(!pending || codeVal !== pending.code){
-    errEl.textContent = currentLang === 'ar' ? 'كود التأكيد غير صحيح.' : 'Invalid verification code.';
-    errEl.classList.add('show'); return;
+document.getElementById('authWhatsappBtn').onclick = () => {
+  const p = getPendingReg();
+  if(!p) return;
+  const msg = encodeURIComponent(`مرحبًا، أريد كود تفعيل حسابي في سجل الشحنات.\nالاسم: ${p.firstName} ${p.lastName}\nالموبايل: ${p.phone}\nالإيميل: ${p.email}`);
+  const waUrl = `https://wa.me/${OWNER_WHATSAPP}?text=${msg}`;
+  window.open(waUrl, '_blank');
+};
+
+// Verification Form
+document.getElementById('verifySubmitBtn').onclick = () => {
+  showAuthError('verifyError', '');
+  const entered = document.getElementById('verify_code').value.trim();
+  const pending = getPendingReg();
+
+  if(!pending){
+    showAuthError('verifyError', currentLang==='ar'?'حدث خطأ. حاول التسجيل مجددًا.':'Error. Try registering again.');
+    return;
   }
 
-  const users = getUsers();
+  if(entered !== pending.code){
+    showAuthError('verifyError', currentLang==='ar'?'كود التأكيد غير صحيح!':'Verification code is incorrect!');
+    return;
+  }
+
   const newUser = {
+    email: pending.email,
+    password: pending.password,
     firstName: pending.firstName,
     lastName: pending.lastName,
     phone: pending.phone,
-    email: pending.email,
-    password: pending.password,
-    workspaceId: genWorkspaceId(),
+    ownedWorkspaces: [{ id: genWorkspaceId(), label: t('myPrivateWs'), members: [] }],
     joinedWorkspaces: [],
-    workspaceMembers: []
+    registeredAt: Date.now()
   };
-  saveUsers([...users.filter(u => u.email !== newUser.email), newUser]);
+
+  const users = [...getUsers(), newUser];
+  saveUsers(users);
+
   localStorage.removeItem(AUTH_PENDING_KEY);
   localStorage.setItem(AUTH_SESSION_KEY, newUser.email);
+
   enterApp(newUser);
 };
 
-document.getElementById('logoutBtn').onclick = () => {
-  const msg = currentLang==='ar' ? 'تسجلي خروج من الجهاز ده؟' : 'Log out from this device?';
-  showConfirm(msg).then(ok => {
-    if(!ok) return;
-    localStorage.removeItem(AUTH_SESSION_KEY);
-    stopDataSync();
-    currentUser = null;
-    document.getElementById('appRoot').style.display = 'none';
-    document.getElementById('authOverlay').classList.remove('hidden');
-    showStep('login');
-  });
+// Login Form Submit
+document.getElementById('loginForm').onsubmit = (e) => {
+  e.preventDefault();
+  showAuthError('loginError', '');
+
+  const identity = document.getElementById('login_identity').value.trim().toLowerCase();
+  const password = document.getElementById('login_password').value;
+
+  if(!identity || !password){
+    showAuthError('loginError', currentLang==='ar'?'ادخل الإيميل/الموبايل وكلمة السر.':'Enter Email/Phone and Password.');
+    return;
+  }
+
+  const users = getUsers();
+  const match = users.find(u => (u.email.toLowerCase() === identity || u.phone === identity) && u.password === password);
+
+  if(!match){
+    showAuthError('loginError', currentLang==='ar'?'بيانات الدخول غير صحيحة.':'Invalid login credentials.');
+    return;
+  }
+
+  localStorage.setItem(AUTH_SESSION_KEY, match.email);
+  enterApp(match);
+};
+
+// Switch screens links
+document.getElementById('goToRegisterLink').onclick = () => { showAuthError('loginError', ''); showStep('register'); };
+document.getElementById('goToLoginLink').onclick = () => { showAuthError('registerError', ''); showStep('login'); };
+document.getElementById('authBackLink').onclick = () => {
+  localStorage.removeItem(AUTH_PENDING_KEY);
+  showStep('register');
 };
 </script>
 </body>
