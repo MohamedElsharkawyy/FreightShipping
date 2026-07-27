@@ -339,6 +339,7 @@
       <button class="btn-ghost btn" id="createGroupBtn" style="padding:5px 10px; font-size:12px;">+ مجموعة جديدة</button>
     </div>
     <div class="top-actions">
+      <button class="btn-ghost btn" id="notifToggleBtn" style="padding:5px 12px; font-size:12px;">🔔 <span id="notifBtnLabel"></span></button>
       <button class="btn-ghost btn" id="logoutBtn" data-i18n="logoutBtn" style="padding:5px 12px; font-size:12px;">تسجيل خروج</button>
       <button class="btn btn-lang" id="langToggleBtn" style="padding:5px 12px; font-size:12px;">English</button>
     </div>
@@ -447,10 +448,10 @@
           <option value="cancelled" data-i18n="stCancelled">ملغاة</option>
         </select>
       </div>
-      <div class="field"><label data-i18n="loading">معاد التحميل</label><input type="datetime-local" id="f_loading"></div>
-      <div class="field"><label data-i18n="etd">تاريخ الإبحار المتوقع (ETD)</label><input type="date" id="f_etd"></div>
-      <div class="field"><label data-i18n="eta">تاريخ الوصول المتوقع (ETA)</label><input type="date" id="f_eta"></div>
-      <div class="field"><label data-i18n="cutoff">آخر ميعاد تسليم المستندات (Cut-off)</label><input type="date" id="f_cutoff"></div>
+      <div class="field"><label data-i18n="loading">معاد التحميل</label><input type="datetime-local" id="f_loading" min="1990-01-01T00:00" max="2099-12-31T23:59"></div>
+      <div class="field"><label data-i18n="etd">تاريخ الإبحار المتوقع (ETD)</label><input type="date" id="f_etd" min="1990-01-01" max="2099-12-31"></div>
+      <div class="field"><label data-i18n="eta">تاريخ الوصول المتوقع (ETA)</label><input type="date" id="f_eta" min="1990-01-01" max="2099-12-31"></div>
+      <div class="field"><label data-i18n="cutoff">آخر ميعاد تسليم المستندات (Cut-off)</label><input type="date" id="f_cutoff" min="1990-01-01" max="2099-12-31"></div>
 
       <div class="section-title" data-i18n="secNotif">تبليغ الجهات</div>
       <div class="field full">
@@ -590,6 +591,15 @@ const i18n = {
     stDelivered: "تسليم",
     stCancelled: "ملغاة",
     urgentBadge: "عاجل",
+    notifEnable: "تفعيل التنبيهات",
+    notifOn: "التنبيهات مفعّلة",
+    notifDenied: "التنبيهات محظورة من المتصفح",
+    notifUnsupported: "المتصفح ده مش بيدعم التنبيهات",
+    notifPermTitle: "تفعيل تنبيهات المتابعة",
+    notifPermBody: "هيتم إشعارك لما شحنة تحتاج متابعة عاجلة (قرب الـ Cut-off أو معاد المغادرة).",
+    notifUrgentTitle: "⚠️ شحنة تحتاج متابعة عاجلة",
+    notifCutoffBody: "اقترب آخر ميعاد تسليم المستندات (Cut-off)",
+    notifEtdBody: "اقترب تاريخ المغادرة (ETD)",
     cancelledStrip: "تم إلغاء هذه الشحنة",
     lblLoading: "تحميل",
     lblEtd: "ETD",
@@ -732,6 +742,15 @@ const i18n = {
     stDelivered: "Delivered",
     stCancelled: "Cancelled",
     urgentBadge: "Urgent",
+    notifEnable: "Enable Notifications",
+    notifOn: "Notifications On",
+    notifDenied: "Notifications Blocked",
+    notifUnsupported: "Notifications Not Supported",
+    notifPermTitle: "Enable Follow-up Notifications",
+    notifPermBody: "You'll be notified when a shipment needs urgent follow-up (Cut-off or Departure date approaching).",
+    notifUrgentTitle: "⚠️ Shipment Needs Urgent Follow-up",
+    notifCutoffBody: "Document Cut-off date is approaching",
+    notifEtdBody: "Departure date (ETD) is approaching",
     cancelledStrip: "This shipment has been cancelled",
     lblLoading: "Loading",
     lblEtd: "ETD",
@@ -1013,6 +1032,137 @@ function renderAlerts(){
   panel.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openModal(b.dataset.open));
 }
 
+/* ---- تنبيهات المتابعة العاجلة (Browser Notifications) ---- */
+function notifStorageKey(){
+  return 'str_notified_' + (currentUser ? currentUser.email : 'anon') + '_' + (activeWorkspaceId || '');
+}
+function getNotifiedSet(){
+  try{ return new Set(JSON.parse(localStorage.getItem(notifStorageKey())) || []); }
+  catch(e){ return new Set(); }
+}
+function saveNotifiedSet(set){
+  localStorage.setItem(notifStorageKey(), JSON.stringify([...set]));
+}
+function updateNotifBtnUI(){
+  const btn = document.getElementById('notifToggleBtn');
+  const lbl = document.getElementById('notifBtnLabel');
+  if(!btn || !lbl) return;
+  if(!('Notification' in window)){
+    lbl.textContent = t('notifUnsupported');
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    return;
+  }
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  if(Notification.permission === 'granted'){
+    lbl.textContent = t('notifOn');
+    btn.style.color = 'var(--teal)';
+    btn.style.borderColor = 'var(--teal)';
+  } else if(Notification.permission === 'denied'){
+    lbl.textContent = t('notifDenied');
+    btn.style.color = 'var(--coral)';
+    btn.style.borderColor = 'var(--line)';
+  } else {
+    lbl.textContent = t('notifEnable');
+    btn.style.color = '';
+    btn.style.borderColor = 'var(--line)';
+  }
+}
+function requestNotifPermission(){
+  if(!('Notification' in window)){ alert(t('notifUnsupported')); return; }
+  if(Notification.permission === 'granted'){
+    checkUrgentNotifications(true);
+    updateNotifBtnUI();
+    return;
+  }
+  if(Notification.permission === 'denied'){
+    updateNotifBtnUI();
+    return;
+  }
+  Notification.requestPermission().then(perm => {
+    updateNotifBtnUI();
+    if(perm === 'granted'){
+      new Notification(t('notifPermTitle'), { body: t('notifPermBody') });
+      checkUrgentNotifications(true);
+    }
+  });
+}
+function checkUrgentNotifications(force){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const notified = getNotifiedSet();
+  let changed = false;
+  shipments.forEach(s => {
+    if(!isUrgent(s)) return;
+    const cutoffDays = daysUntil(s.cutoff);
+    const etdDays = daysUntil(s.etd);
+    const cutoffHit = cutoffDays !== null && cutoffDays <= 2;
+    const etdHit = etdDays !== null && etdDays >= 0 && etdDays <= 2;
+    const key = s.id + ':' + (s.cutoff||'') + ':' + (s.etd||'');
+    if(notified.has(key) && !force) return;
+    const bodyParts = [];
+    if(cutoffHit) bodyParts.push(t('notifCutoffBody'));
+    if(etdHit) bodyParts.push(t('notifEtdBody'));
+    const body = (s.ref||'') + ' · ' + (s.client||'') + '\n' + bodyParts.join(' / ');
+    try{
+      const n = new Notification(t('notifUrgentTitle'), { body, tag: key });
+      n.onclick = () => { window.focus(); openModal(s.id); };
+    }catch(e){ /* ignore */ }
+    notified.add(key);
+    changed = true;
+  });
+  if(changed) saveNotifiedSet(notified);
+}
+
+/* ---- تنبيهات بالإيميل للشحنات العاجلة (على إيميل المستخدم الداخل بحسابه) ---- */
+function emailStorageKey(){
+  return 'str_emailed_' + (currentUser ? currentUser.email : 'anon') + '_' + (activeWorkspaceId || '');
+}
+function getEmailedSet(){
+  try{ return new Set(JSON.parse(localStorage.getItem(emailStorageKey())) || []); }
+  catch(e){ return new Set(); }
+}
+function saveEmailedSet(set){
+  localStorage.setItem(emailStorageKey(), JSON.stringify([...set]));
+}
+function checkUrgentEmails(){
+  if(!currentUser || !currentUser.email) return;
+  const emailed = getEmailedSet();
+  let changed = false;
+  shipments.forEach(s => {
+    if(!isUrgent(s)) return;
+    const cutoffDays = daysUntil(s.cutoff);
+    const etdDays = daysUntil(s.etd);
+    const cutoffHit = cutoffDays !== null && cutoffDays <= 2;
+    const etdHit = etdDays !== null && etdDays >= 0 && etdDays <= 2;
+    const key = s.id + ':' + (s.cutoff||'') + ':' + (s.etd||'');
+    if(emailed.has(key)) return;
+    const reasons = [];
+    if(cutoffHit) reasons.push(`آخر ميعاد تسليم المستندات (Cut-off): ${fmtDate(s.cutoff)}`);
+    if(etdHit) reasons.push(`تاريخ الإبحار المتوقع (ETD): ${fmtDate(s.etd)}`);
+    const messageBody =
+      `شحنة تحتاج متابعة عاجلة:\n\n` +
+      `المرجع: ${s.ref || '—'}\n` +
+      `العميل: ${s.client || '—'}\n` +
+      `المسار: ${s.pol || '—'} → ${s.pod || '—'}\n\n` +
+      reasons.join('\n');
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_ACCESS_KEY,
+        subject: `تنبيه متابعة عاجلة: شحنة ${s.ref || ''} - ${s.client || ''}`,
+        from_name: 'سجل الشحنات System',
+        to_email: currentUser.email,
+        message: messageBody
+      })
+    }).catch(err => console.error('urgent email error', err));
+    emailed.add(key);
+    changed = true;
+  });
+  if(changed) saveEmailedSet(emailed);
+}
+
 function renderTabs(){
   const counts = {all: shipments.length};
   STAGES.forEach(st => counts[st.key] = shipments.filter(s=>s.status===st.key).length);
@@ -1148,6 +1298,9 @@ function render(){
   updatePageLanguageUI();
   renderStats();
   renderAlerts();
+  updateNotifBtnUI();
+  checkUrgentNotifications(false);
+  checkUrgentEmails();
   renderTabs();
   renderAdvFilters();
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -1538,6 +1691,9 @@ document.getElementById('filterPod').oninput = e => { filterPod = e.target.value
 document.getElementById('filterVessel').onchange = e => { filterVessel = e.target.value; render(); };
 document.getElementById('filterUcr').onchange = e => { filterUcr = e.target.value; render(); };
 document.getElementById('filterAcid').onchange = e => { filterAcid = e.target.value; render(); };
+document.getElementById('notifToggleBtn').onclick = requestNotifPermission;
+if('Notification' in window){ updateNotifBtnUI(); }
+setInterval(() => { renderAlerts(); checkUrgentNotifications(false); checkUrgentEmails(); }, 10 * 60 * 1000); // إعادة الفحص كل 10 دقايق لو الصفحة فاضلة مفتوحة
 document.getElementById('exportBtn').onclick = exportToExcel;
 document.getElementById('backupBtn').onclick = backupData;
 document.getElementById('restoreBtn').onclick = () => document.getElementById('restoreInput').click();
@@ -1545,6 +1701,21 @@ document.getElementById('restoreInput').onchange = (e) => { if(e.target.files[0]
 document.getElementById('importExcelBtn').onclick = () => document.getElementById('importExcelInput').click();
 document.getElementById('importExcelInput').onchange = (e) => { if(e.target.files[0]) importFromExcel(e.target.files[0]); e.target.value=''; };
 ['f_oceanFreight','f_thc','f_docFees'].forEach(id => document.getElementById(id).oninput = recalcTotal);
+/* منع كتابة سنة أكتر من 4 خانات في حقول التاريخ (مشكلة معروفة في متصفحات Chrome/Edge) */
+function guardDateYear(e){
+  const el = e.target;
+  const val = el.value;
+  if(!val) return;
+  const m = val.match(/^(\d+)-(\d{2}-\d{2}.*)$/);
+  if(m && m[1].length > 4){
+    el.value = m[1].slice(0, 4) + '-' + m[2];
+  }
+}
+['f_loading','f_etd','f_eta','f_cutoff'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', guardDateYear);
+  el.addEventListener('blur', guardDateYear);
+});
 document.getElementById('resetBtn').onclick = () => {
   const msg = currentLang==='ar'?'هيتم مسح كل الشحنات المسجلة نهائيًا. تأكيد؟':'Permanently delete all shipments?';
   showConfirm(msg).then(ok => {
