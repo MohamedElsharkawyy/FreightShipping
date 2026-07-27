@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <style>
   :root{
     --ink:#0B1F30;
@@ -1146,17 +1147,15 @@ function checkUrgentEmails(){
       `العميل: ${s.client || '—'}\n` +
       `المسار: ${s.pol || '—'} → ${s.pod || '—'}\n\n` +
       reasons.join('\n');
-    fetch('https://api.web3forms.com/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        access_key: WEB3FORMS_ACCESS_KEY,
-        subject: `تنبيه متابعة عاجلة: شحنة ${s.ref || ''} - ${s.client || ''}`,
-        from_name: 'سجل الشحنات System',
+    if(window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY'){
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         to_email: currentUser.email,
+        subject: `تنبيه متابعة عاجلة: شحنة ${s.ref || ''} - ${s.client || ''}`,
         message: messageBody
-      })
-    }).catch(err => console.error('urgent email error', err));
+      }).catch(err => console.error('emailjs urgent email error', err));
+    } else {
+      console.warn('EmailJS غير مُهيّأ بعد — لازم تحط EMAILJS_PUBLIC_KEY / SERVICE_ID / TEMPLATE_ID');
+    }
     emailed.add(key);
     changed = true;
   });
@@ -1806,6 +1805,15 @@ const AUTH_PENDING_KEY = 'str_auth_pending';
 const OWNER_EMAIL = 'mhelsharkawyy@gmail.com';
 const OWNER_WHATSAPP = '201000700163';
 const WEB3FORMS_ACCESS_KEY = 'fe3da370-ad64-4f8b-8543-a9099b44db71';
+
+/* ============ EMAILJS (لإرسال إيميلات المتابعة العاجلة لإيميل كل مستخدم شخصيًا) ============ */
+/* لازم تسجل حساب مجاني على emailjs.com وتحط بياناتك هنا: */
+const EMAILJS_PUBLIC_KEY = 'k1vPc8JfawP4Uk-uk';
+const EMAILJS_SERVICE_ID = 'service_m89adte';
+const EMAILJS_TEMPLATE_ID = 'template_gwt1wfc';
+if(window.emailjs && EMAILJS_PUBLIC_KEY !== 'YOUR_EMAILJS_PUBLIC_KEY'){
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+}
 
 function genCode(){
   return String(Math.floor(100000 + Math.random()*900000));
