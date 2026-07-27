@@ -67,6 +67,32 @@
     align-items: center;
     gap: 8px;
   }
+  .notif-dropdown-wrap{ position: relative; display: inline-block; }
+  .notif-dropdown{
+    position: absolute;
+    top: calc(100% + 8px);
+    inset-inline-end: 0;
+    min-width: 250px;
+    max-width: 320px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+    z-index: 60;
+  }
+  .notif-dd-title{ font-size: 11.5px; color: var(--text-dim); padding: 10px 14px 6px; }
+  .notif-dd-item{
+    display: block; width: 100%; text-align: start; background: transparent; border: none;
+    color: var(--text); padding: 10px 14px; font-family: inherit; font-size: 12.5px; cursor: pointer;
+    border-top: 1px solid var(--line);
+  }
+  .notif-dd-item:hover{ background: rgba(255,255,255,0.06); }
+  .notif-dd-item .dd-ref{ font-weight: 700; color: var(--coral); }
+  .notif-dd-item .dd-client{ color: var(--text-dim); margin-inline-start: 6px; }
+  .notif-dd-item .dd-reason{ font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .notif-dd-empty{ padding: 16px 14px; text-align: center; font-size: 12.5px; color: var(--text-dim); }
 
   header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: 18px; flex-wrap:wrap; }
   .brand{ display:flex; align-items:center; gap:12px; }
@@ -340,7 +366,10 @@
       <button class="btn-ghost btn" id="createGroupBtn" style="padding:5px 10px; font-size:12px;">+ مجموعة جديدة</button>
     </div>
     <div class="top-actions">
-      <button class="btn-ghost btn" id="notifToggleBtn" style="padding:5px 12px; font-size:12px;">🔔 <span id="notifBtnLabel"></span></button>
+      <div class="notif-dropdown-wrap">
+        <button class="btn-ghost btn" id="notifToggleBtn" style="padding:5px 12px; font-size:12px;">🔔 <span id="notifBtnLabel"></span></button>
+        <div class="notif-dropdown" id="notifDropdown" style="display:none;"></div>
+      </div>
       <button class="btn-ghost btn" id="logoutBtn" data-i18n="logoutBtn" style="padding:5px 12px; font-size:12px;">تسجيل خروج</button>
       <button class="btn btn-lang" id="langToggleBtn" style="padding:5px 12px; font-size:12px;">English</button>
     </div>
@@ -1048,48 +1077,65 @@ function updateNotifBtnUI(){
   const btn = document.getElementById('notifToggleBtn');
   const lbl = document.getElementById('notifBtnLabel');
   if(!btn || !lbl) return;
-  if(!('Notification' in window)){
-    lbl.textContent = t('notifUnsupported');
-    btn.disabled = true;
-    btn.style.opacity = '0.5';
-    return;
-  }
-  btn.disabled = false;
-  btn.style.opacity = '1';
-  if(Notification.permission === 'granted'){
-    lbl.textContent = t('notifOn');
-    btn.style.color = 'var(--teal)';
-    btn.style.borderColor = 'var(--teal)';
-  } else if(Notification.permission === 'denied'){
-    lbl.textContent = t('notifDenied');
+  const urgentCount = shipments.filter(isUrgent).length;
+  lbl.textContent = t('urgentFollowup') + (urgentCount ? ` (${urgentCount})` : '');
+  if(urgentCount > 0){
     btn.style.color = 'var(--coral)';
-    btn.style.borderColor = 'var(--line)';
+    btn.style.borderColor = 'var(--coral)';
   } else {
-    lbl.textContent = t('notifEnable');
     btn.style.color = '';
     btn.style.borderColor = 'var(--line)';
   }
 }
-function requestNotifPermission(){
-  if(!('Notification' in window)){ alert(t('notifUnsupported')); return; }
-  if(Notification.permission === 'granted'){
-    checkUrgentNotifications(true);
-    updateNotifBtnUI();
+function renderNotifDropdown(){
+  const dd = document.getElementById('notifDropdown');
+  if(!dd) return;
+  const urgentList = shipments.filter(isUrgent);
+  if(urgentList.length === 0){
+    dd.innerHTML = `<div class="notif-dd-empty">${currentLang==='ar' ? 'مفيش شحنات عاجلة دلوقتي 👍' : 'No urgent shipments right now 👍'}</div>`;
     return;
   }
-  if(Notification.permission === 'denied'){
-    updateNotifBtnUI();
-    return;
-  }
-  Notification.requestPermission().then(perm => {
-    updateNotifBtnUI();
-    if(perm === 'granted'){
-      new Notification(t('notifPermTitle'), { body: t('notifPermBody') });
-      checkUrgentNotifications(true);
-    }
+  dd.innerHTML = `<div class="notif-dd-title">${t('urgentFollowup')}</div>` + urgentList.map(s => {
+    const cutoffDays = daysUntil(s.cutoff);
+    const etdDays = daysUntil(s.etd);
+    const reasons = [];
+    if(cutoffDays !== null && cutoffDays <= 2) reasons.push(`${t('lblCutoff')}: ${fmtDate(s.cutoff)}`);
+    if(etdDays !== null && etdDays >= 0 && etdDays <= 2) reasons.push(`${t('lblEtd')}: ${fmtDate(s.etd)}`);
+    return `<button class="notif-dd-item" data-notif-open="${s.id}">
+      <span class="dd-ref">${s.ref||'—'}</span><span class="dd-client">${s.client||''}</span>
+      <div class="dd-reason">${reasons.join(' · ')}</div>
+    </button>`;
+  }).join('');
+  dd.querySelectorAll('[data-notif-open]').forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    closeNotifDropdown();
+    openModal(b.dataset.notifOpen);
   });
 }
+function openNotifDropdown(){
+  renderNotifDropdown();
+  document.getElementById('notifDropdown').style.display = 'block';
+}
+function closeNotifDropdown(){
+  const dd = document.getElementById('notifDropdown');
+  if(dd) dd.style.display = 'none';
+}
+function toggleNotifDropdown(e){
+  e.stopPropagation();
+  // نحاول نفعّل تنبيهات المتصفح بصمت كبونص (لو المتصفح بيدعمها ومحتاجة موافقة أول مرة)، من غير ما يعطّل الوظيفة الأساسية للزرار
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission().then(() => { updateNotifBtnUI(); checkUrgentNotifications(true); });
+  }
+  const dd = document.getElementById('notifDropdown');
+  if(dd.style.display === 'block'){ closeNotifDropdown(); }
+  else { openNotifDropdown(); }
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.notif-dropdown-wrap');
+  if(wrap && !wrap.contains(e.target)) closeNotifDropdown();
+});
 function checkUrgentNotifications(force){
+
   if(!('Notification' in window) || Notification.permission !== 'granted') return;
   const notified = getNotifiedSet();
   let changed = false;
@@ -1298,6 +1344,8 @@ function render(){
   renderStats();
   renderAlerts();
   updateNotifBtnUI();
+  const notifDd = document.getElementById('notifDropdown');
+  if(notifDd && notifDd.style.display === 'block') renderNotifDropdown();
   checkUrgentNotifications(false);
   checkUrgentEmails();
   renderTabs();
@@ -1690,8 +1738,8 @@ document.getElementById('filterPod').oninput = e => { filterPod = e.target.value
 document.getElementById('filterVessel').onchange = e => { filterVessel = e.target.value; render(); };
 document.getElementById('filterUcr').onchange = e => { filterUcr = e.target.value; render(); };
 document.getElementById('filterAcid').onchange = e => { filterAcid = e.target.value; render(); };
-document.getElementById('notifToggleBtn').onclick = requestNotifPermission;
-if('Notification' in window){ updateNotifBtnUI(); }
+document.getElementById('notifToggleBtn').onclick = toggleNotifDropdown;
+updateNotifBtnUI();
 setInterval(() => { renderAlerts(); checkUrgentNotifications(false); checkUrgentEmails(); }, 10 * 60 * 1000); // إعادة الفحص كل 10 دقايق لو الصفحة فاضلة مفتوحة
 document.getElementById('exportBtn').onclick = exportToExcel;
 document.getElementById('backupBtn').onclick = backupData;
